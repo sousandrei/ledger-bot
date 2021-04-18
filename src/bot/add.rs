@@ -2,6 +2,7 @@ use mongodb::{
     bson::{self, oid::ObjectId},
     Database,
 };
+use regex::Regex;
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 use tracing::{error, info};
 
@@ -75,25 +76,34 @@ struct AddParams {
 }
 
 fn parse_add_params(input: String) -> Result<AddParams, Error> {
-    let mut parts: Vec<String> = input.split(' ').map(|s| s.to_string()).collect();
+    let re = Regex::new("(\\d+) \"([\\w\\s]+)\" ([@\\w\\s]+)")?;
 
-    if parts.len() < 3 {
-        error!("Not enough parameters: {:?}", parts);
+    let caps = re.captures(&input);
 
-        Err(Error::new(
+    if caps.is_none() {
+        error!("Not enough parameters: {:?}", input);
+
+        return Err(Error::new(
             "Tá faltando coisa aí! Exemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",
-        ))
-    } else {
-        let params = AddParams {
-            item: parts[0].parse()?,
-            seller: parts[1].to_owned().replace("\"", ""),
-            users: parts[2..]
-                .iter_mut()
-                .filter(|user| user.starts_with("@"))
-                .map(|user| user.to_owned())
-                .collect(),
-        };
-
-        Ok(params)
+        ));
     }
+
+    let caps = caps.unwrap();
+
+    let item: i32 = caps[1].parse()?;
+    let seller = caps[2].to_owned();
+    let users = caps[3]
+        .split(" ")
+        .into_iter()
+        .filter(|user| user.starts_with("@"))
+        .map(|user| user.to_owned())
+        .collect();
+
+    let params = AddParams {
+        item,
+        seller,
+        users,
+    };
+
+    Ok(params)
 }

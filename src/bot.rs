@@ -1,7 +1,7 @@
 use std::env;
 use teloxide::{
     adaptors::AutoSend,
-    prelude::{Request, Requester, RequesterExt, UpdateWithCx},
+    prelude::{Request, RequesterExt, UpdateWithCx},
     types::Message,
     utils::command::BotCommand,
     Bot,

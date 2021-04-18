@@ -66,3 +66,9 @@ impl From<mongodb::bson::oid::Error> for Error {
         Error::new(&error.to_string())
     }
 }
+
+impl From<regex::Error> for Error {
+    fn from(error: regex::Error) -> Self {
+        Error::new(&error.to_string())
+    }
+}
