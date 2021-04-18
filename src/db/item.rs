@@ -1,6 +1,5 @@
 use mongodb::{
     bson::{self, oid::ObjectId, Document},
-    results::InsertOneResult,
     Collection, Database,
 };
 use serde::{Deserialize, Serialize};
@@ -74,7 +73,7 @@ enum ItemType {
 pub struct Item {
     #[serde(default)]
     _id: ObjectId,
-    pub item_id: i32,
+    item_id: i32,
     unique_name: String,
     name: String,
     #[serde(rename = "type")]
@@ -92,10 +91,10 @@ impl From<Item> for Document {
     }
 }
 
-pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
+pub async fn _get(id: i32, db: Database) -> Result<Option<Item>, Error> {
     let items = db.collection("items");
 
-    let filter = bson::doc! { "item_it": id };
+    let filter = bson::doc! { "item_id": id };
 
     match items.find_one(filter, None).await? {
         Some(document) => {
@@ -106,13 +105,18 @@ pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
     }
 }
 
-pub async fn _add(item: Item, db: Database) -> Result<ObjectId, Error> {
+pub async fn add_bulk(item_list: Vec<Item>, db: Database) -> Result<(), Error> {
     let items: Collection<Item> = db.collection("items");
 
-    let InsertOneResult { inserted_id, .. } = items.insert_one(item.into(), None).await?;
+    items.insert_many(item_list, None).await?;
 
-    match inserted_id.as_object_id() {
-        Some(id) => Ok(id.to_owned()),
-        None => Err(Error::new("ID missing from mongo call")),
-    }
+    Ok(())
+}
+
+pub async fn clear(db: Database) -> Result<(), Error> {
+    let items: Collection<Item> = db.collection("items");
+
+    items.drop(None).await?;
+
+    Ok(())
 }

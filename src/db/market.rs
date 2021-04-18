@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
 use mongodb::{
-    bson::{self, oid::ObjectId, DateTime, Document},
+    bson::{self, oid::ObjectId, Document},
     results::InsertOneResult,
     Collection, Database,
 };
@@ -17,7 +18,7 @@ struct Location {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 struct SellingItem {
     item_id: i32,
-    ammount: i32,
+    amount: i32,
     price: i32,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
@@ -33,10 +34,10 @@ pub struct Market {
     title: String,
     owner: String,
     location: Location,
-    creation_date: DateTime,
+    creation_date: DateTime<Utc>,
     #[serde(rename = "type")]
     tipo: ShopType,
-    items: SellingItem,
+    items: Vec<SellingItem>,
 }
 
 impl From<Market> for Document {
@@ -46,7 +47,7 @@ impl From<Market> for Document {
 }
 
 pub async fn _get(id: i32, db: Database) -> Result<Option<Market>, Error> {
-    let items = db.collection("items");
+    let items = db.collection("market");
 
     let filter = bson::doc! { "item_it": id };
 
@@ -60,7 +61,7 @@ pub async fn _get(id: i32, db: Database) -> Result<Option<Market>, Error> {
 }
 
 pub async fn _add(item: Market, db: Database) -> Result<ObjectId, Error> {
-    let items: Collection<Market> = db.collection("items");
+    let items: Collection<Market> = db.collection("market");
 
     let InsertOneResult { inserted_id, .. } = items.insert_one(item.into(), None).await?;
 
@@ -68,4 +69,20 @@ pub async fn _add(item: Market, db: Database) -> Result<ObjectId, Error> {
         Some(id) => Ok(id.to_owned()),
         None => Err(Error::new("ID missing from mongo call")),
     }
+}
+
+pub async fn add_bulk(item_list: Vec<Market>, db: Database) -> Result<(), Error> {
+    let items: Collection<Market> = db.collection("market");
+
+    items.insert_many(item_list, None).await?;
+
+    Ok(())
+}
+
+pub async fn clear(db: Database) -> Result<(), Error> {
+    let items: Collection<Market> = db.collection("market");
+
+    items.drop(None).await?;
+
+    Ok(())
 }
