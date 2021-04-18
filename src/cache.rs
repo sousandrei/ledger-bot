@@ -1,5 +1,6 @@
 use chrono::{Duration, Utc};
 use mongodb::{bson::oid::ObjectId, Database};
+use tokio::{task::JoinHandle, time::sleep};
 use tracing::info;
 
 use crate::{
@@ -10,14 +11,33 @@ use crate::{
         market::{self, Market},
     },
     error::Error,
+    sale,
 };
 
 pub async fn refresh(db: Database) -> Result<(), Error> {
-    refresh_cache("items", Duration::days(7), db.clone()).await?;
-    refresh_cache("market", Duration::minutes(10), db.clone()).await?;
-    refresh_cache("fame", Duration::minutes(10), db.clone()).await?;
+    schedule_cache_refresh("items".to_owned(), Duration::seconds(7), db.clone()).await;
+    schedule_cache_refresh("market".to_owned(), Duration::seconds(10), db.clone()).await;
+    schedule_cache_refresh("fame".to_owned(), Duration::seconds(10), db.clone()).await;
 
     Ok(())
+}
+
+async fn schedule_cache_refresh(
+    collection: String,
+    duration: Duration,
+    db: Database,
+) -> JoinHandle<Result<(), Error>> {
+    tokio::spawn(async move {
+        loop {
+            refresh_cache(&collection.clone(), duration, db.clone()).await?;
+
+            if collection == "items" {
+                sale::compare_sales(db.clone()).await?;
+            }
+
+            sleep(duration.to_std().unwrap()).await;
+        }
+    })
 }
 
 async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Result<(), Error> {
@@ -53,7 +73,7 @@ async fn cache_data(collection: &str, db: Database) -> Result<(), Error> {
     let api_key = "cu";
 
     let data: serde_json::Value = reqwest::Client::new()
-        // let api_key = "API_KEY";
+        // let api_key = "5m4c123s4xvfstrzuesjjkuqd65fkore";
         // .get("https://api.originsro.org/api/v1/ping")
         .get(format!("http://localhost:3000/{}", collection))
         .header("x-api-key", api_key)

@@ -4,6 +4,7 @@ mod bot;
 mod cache;
 mod db;
 mod error;
+mod sale;
 
 use error::Error;
 
@@ -13,7 +14,7 @@ async fn main() -> Result<(), Error> {
 
     let db = db::get_db().await?;
     cache::refresh(db.clone()).await?;
-    bot::run(db).await?;
+    bot::run().await?;
 
     Ok(())
 }

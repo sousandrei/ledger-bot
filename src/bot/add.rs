@@ -1,31 +1,75 @@
+use mongodb::{
+    bson::{self, oid::ObjectId},
+    Database,
+};
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 
+use crate::db::{
+    market,
+    sale::{self, Sale},
+};
 use crate::Error;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct AddParams {
     item: i32,
-    store: String,
+    seller: String,
     users: Vec<String>,
 }
 
-pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, input: String) -> Result<(), Error> {
-    match parse_add_params(input) {
-        Ok(AddParams { item, store, users }) => {
-            println!("{:#?}", item);
-            println!("{:#?}", store);
-            println!("{:#?}", users);
-
-            cx.answer(
-                "Show, registrei aqui o seu {} e vou ficar de olho pra quando ele for vendido.",
-            )
-            .await?;
-        }
+pub async fn handler(
+    cx: UpdateWithCx<AutoSend<Bot>, Message>,
+    input: String,
+    db: Database,
+) -> Result<(), Error> {
+    let AddParams {
+        item,
+        seller,
+        users,
+    } = match parse_add_params(input) {
+        Ok(params) => params,
         Err(error) => {
             println!("Error: {:#?}", error);
             cx.answer("Something failed").await?;
+            return Ok(());
         }
     };
+
+    let shop = market::get(bson::doc! { "owner": seller.clone() }, db.clone()).await?;
+
+    if shop.is_none() {
+        cx.answer("Nao achei esta lojinha").await?;
+        return Ok(());
+    }
+
+    let shop = shop.unwrap();
+
+    let shop_item = shop.items.iter().find(|i| i.item_id == item);
+
+    if shop_item.is_none() {
+        cx.answer("Este vendedor nao esta vendendo este item")
+            .await?;
+        return Ok(());
+    }
+
+    sale::add(
+        Sale {
+            _id: ObjectId::new(),
+            item,
+            seller: seller.clone(),
+            users,
+        },
+        db,
+    )
+    .await?;
+
+    println!("{:#?}", shop);
+
+    cx.answer(format!(
+        "Show, registrei aqui o item {} vendido por {}",
+        item, seller
+    ))
+    .await?;
 
     Ok(())
 }
@@ -40,7 +84,7 @@ fn parse_add_params(input: String) -> Result<AddParams, Error> {
     } else {
         let params = AddParams {
             item: parts[0].parse()?,
-            store: parts[1].to_owned().replace("\"", ""),
+            seller: parts[1].to_owned().replace("\"", ""),
             users: parts[2..]
                 .iter_mut()
                 .filter(|user| user.starts_with("@"))

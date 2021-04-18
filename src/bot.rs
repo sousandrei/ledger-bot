@@ -10,6 +10,7 @@ use teloxide::{
 use tokio::sync::Mutex;
 use tracing::info;
 
+use crate::db;
 use crate::Error;
 
 mod add;
@@ -23,7 +24,7 @@ lazy_static! {
 }
 //====================================
 
-#[derive(BotCommand)]
+#[derive(BotCommand, Debug)]
 #[command(rename = "lowercase", description = "Eu entendo só isso aqui ó:")]
 enum Command {
     #[command(description = "Amostra esse texto.")]
@@ -36,32 +37,24 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> R
     println!("Message {:#?}", cx.update.text());
     println!("Chat {:#?}", cx.update.chat);
     println!("Chat_id {:#?}", cx.update.chat_id());
+    println!("Chat_id {:#?}", command);
 
-    let db = DATABASE.lock().await;
-
-    if db.is_none() {
-        cx.answer("DB not initialized, try again soon")
-            .send()
-            .await?;
-    }
+    let db = db::get_db().await?;
 
     match command {
         Command::Help => {
             cx.answer(Command::descriptions()).send().await?;
         }
-        Command::Add(input) => add::handler(cx, input).await?,
+        Command::Add(input) => add::handler(cx, input, db).await?,
     };
 
     Ok(())
 }
 
-pub async fn run(db: Database) -> Result<(), Error> {
+pub async fn run() -> Result<(), Error> {
     info!("Starting bot");
 
     let bot = Bot::from_env().auto_send();
-
-    let mut d = DATABASE.lock().await;
-    *d = Some(db);
 
     teloxide::commands_repl(bot, "RobertaoBot".to_string(), answer).await;
 
