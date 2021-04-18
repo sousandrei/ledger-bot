@@ -50,6 +50,12 @@ impl From<mongodb::bson::de::Error> for Error {
     }
 }
 
+impl From<mongodb::bson::ser::Error> for Error {
+    fn from(error: mongodb::bson::ser::Error) -> Self {
+        Error::new(&error.to_string())
+    }
+}
+
 impl From<reqwest::Error> for Error {
     fn from(error: reqwest::Error) -> Self {
         Error::new(&error.to_string())

@@ -3,6 +3,7 @@ use mongodb::{
     Database,
 };
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
+use tracing::{error, info};
 
 use crate::db::{
     market,
@@ -29,7 +30,7 @@ pub async fn handler(
     } = match parse_add_params(input) {
         Ok(params) => params,
         Err(error) => {
-            println!("Error: {:#?}", error);
+            error!("Error: {:#?}", error);
             cx.answer("Something failed").await?;
             return Ok(());
         }
@@ -38,7 +39,7 @@ pub async fn handler(
     let shop = market::get(bson::doc! { "owner": seller.clone() }, db.clone()).await?;
 
     if shop.is_none() {
-        cx.answer("Nao achei esta lojinha").await?;
+        cx.answer("Não achei esta lojinha").await?;
         return Ok(());
     }
 
@@ -47,7 +48,7 @@ pub async fn handler(
     let shop_item = shop.items.iter().find(|i| i.item_id == item);
 
     if shop_item.is_none() {
-        cx.answer("Este vendedor nao esta vendendo este item")
+        cx.answer("Este vendedor não esta vendendo este item")
             .await?;
         return Ok(());
     }
@@ -63,7 +64,7 @@ pub async fn handler(
     )
     .await?;
 
-    println!("{:#?}", shop);
+    info!("add item {} on shop {}", item, seller.clone());
 
     cx.answer(format!(
         "Show, registrei aqui o item {} vendido por {}",

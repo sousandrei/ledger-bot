@@ -1,10 +1,10 @@
+use futures::stream::StreamExt;
 use mongodb::{
     bson::{self, oid::ObjectId, Document},
     results::{DeleteResult, InsertOneResult},
     Collection, Database,
 };
 use serde::{Deserialize, Serialize};
-use teloxide::prelude::StreamExt;
 
 use crate::Error;
 
