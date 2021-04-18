@@ -1,5 +1,6 @@
 use chrono::{Duration, Utc};
 use mongodb::{bson::oid::ObjectId, Database};
+use std::env;
 use tokio::{task::JoinHandle, time::sleep};
 use tracing::info;
 
@@ -15,9 +16,9 @@ use crate::{
 };
 
 pub async fn refresh(db: Database) -> Result<(), Error> {
-    schedule_cache_refresh("items".to_owned(), Duration::seconds(7), db.clone()).await;
-    schedule_cache_refresh("market".to_owned(), Duration::seconds(10), db.clone()).await;
-    schedule_cache_refresh("fame".to_owned(), Duration::seconds(10), db.clone()).await;
+    schedule_cache_refresh("items".to_owned(), Duration::days(7), db.clone()).await;
+    schedule_cache_refresh("market".to_owned(), Duration::minutes(10), db.clone()).await;
+    schedule_cache_refresh("fame".to_owned(), Duration::minutes(10), db.clone()).await;
 
     Ok(())
 }
@@ -70,12 +71,14 @@ async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Re
 }
 
 async fn cache_data(collection: &str, db: Database) -> Result<(), Error> {
-    let api_key = "cu";
+    let api_key = env::var("API_KEY").expect("API_KEY not present on environment");
 
     let data: serde_json::Value = reqwest::Client::new()
-        // let api_key = "5m4c123s4xvfstrzuesjjkuqd65fkore";
-        // .get("https://api.originsro.org/api/v1/ping")
-        .get(format!("http://localhost:3000/{}", collection))
+        .get(format!(
+            // "http://localhost:3000/{}",
+            "https://api.originsro.org/api/v1/{}/list",
+            collection
+        ))
         .header("x-api-key", api_key)
         .send()
         .await?
