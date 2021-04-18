@@ -882,6 +882,7 @@ dependencies = [
  "log",
  "mongodb",
  "pretty_env_logger",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
