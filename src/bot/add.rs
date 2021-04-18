@@ -11,13 +11,6 @@ use crate::db::{
 };
 use crate::Error;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct AddParams {
-    item: i32,
-    seller: String,
-    users: Vec<String>,
-}
-
 pub async fn handler(
     cx: UpdateWithCx<AutoSend<Bot>, Message>,
     input: String,
@@ -30,11 +23,12 @@ pub async fn handler(
     } = match parse_add_params(input) {
         Ok(params) => params,
         Err(error) => {
-            error!("Error: {:#?}", error);
-            cx.answer("Something failed").await?;
+            cx.answer(error.message).await?;
             return Ok(());
         }
     };
+
+    info!("item {} on shop {}", item, seller.clone());
 
     let shop = market::get(bson::doc! { "owner": seller.clone() }, db.clone()).await?;
 
@@ -64,8 +58,6 @@ pub async fn handler(
     )
     .await?;
 
-    info!("add item {} on shop {}", item, seller.clone());
-
     cx.answer(format!(
         "Show, registrei aqui o item {} vendido por {}",
         item, seller
@@ -75,10 +67,19 @@ pub async fn handler(
     Ok(())
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct AddParams {
+    item: i32,
+    seller: String,
+    users: Vec<String>,
+}
+
 fn parse_add_params(input: String) -> Result<AddParams, Error> {
     let mut parts: Vec<String> = input.split(' ').map(|s| s.to_string()).collect();
 
     if parts.len() < 3 {
+        error!("Not enough parameters: {:?}", parts);
+
         Err(Error::new(
             "Tá faltando coisa aí! Exemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",
         ))

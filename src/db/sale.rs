@@ -36,6 +36,18 @@ pub async fn list(db: Database) -> Result<Vec<Sale>, Error> {
     Ok(sales)
 }
 
+pub async fn get(query: Document, db: Database) -> Result<Option<Sale>, Error> {
+    let items = db.collection("sale");
+
+    match items.find_one(query, None).await? {
+        Some(document) => {
+            let item: Sale = bson::from_document(document)?;
+            Ok(Some(item))
+        }
+        None => Ok(None),
+    }
+}
+
 pub async fn add(item: Sale, db: Database) -> Result<ObjectId, Error> {
     let items: Collection<Sale> = db.collection("sale");
 

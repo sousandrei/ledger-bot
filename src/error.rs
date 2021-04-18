@@ -61,3 +61,8 @@ impl From<reqwest::Error> for Error {
         Error::new(&error.to_string())
     }
 }
+impl From<mongodb::bson::oid::Error> for Error {
+    fn from(error: mongodb::bson::oid::Error) -> Self {
+        Error::new(&error.to_string())
+    }
+}
