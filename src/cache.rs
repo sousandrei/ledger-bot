@@ -44,7 +44,7 @@ async fn schedule_cache_refresh(
 async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Result<(), Error> {
     let c = cache::get(collection, db.clone()).await?;
 
-    if !c.is_none() && c.unwrap().date > Utc::now().into() {
+    if c.is_some() && c.unwrap().date > Utc::now().into() {
         info!("Using {} cache", collection);
         return Ok(());
     }

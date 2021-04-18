@@ -93,9 +93,9 @@ fn parse_add_params(input: String) -> Result<AddParams, Error> {
     let item: i32 = caps[1].parse()?;
     let seller = caps[2].to_owned();
     let users = caps[3]
-        .split(" ")
+        .split(' ')
         .into_iter()
-        .filter(|user| user.starts_with("@"))
+        .filter(|user| user.starts_with('@'))
         .map(|user| user.to_owned())
         .collect();
 

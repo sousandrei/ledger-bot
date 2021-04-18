@@ -23,15 +23,12 @@ impl From<Fame> for Document {
 }
 
 pub async fn _get(id: i32, db: Database) -> Result<Option<Fame>, Error> {
-    let items = db.collection("fame");
+    let items: Collection<Fame> = db.collection("fame");
 
     let filter = bson::doc! { "item_it": id };
 
     match items.find_one(filter, None).await? {
-        Some(document) => {
-            let item: Fame = bson::from_document(document)?;
-            Ok(Some(item))
-        }
+        Some(item) => Ok(Some(item)),
         None => Ok(None),
     }
 }
@@ -39,7 +36,7 @@ pub async fn _get(id: i32, db: Database) -> Result<Option<Fame>, Error> {
 pub async fn _add(item: Fame, db: Database) -> Result<ObjectId, Error> {
     let items: Collection<Fame> = db.collection("fame");
 
-    let InsertOneResult { inserted_id, .. } = items.insert_one(item.into(), None).await?;
+    let InsertOneResult { inserted_id, .. } = items.insert_one(item, None).await?;
 
     match inserted_id.as_object_id() {
         Some(id) => Ok(id.to_owned()),

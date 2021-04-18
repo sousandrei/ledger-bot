@@ -46,13 +46,10 @@ impl From<Market> for Document {
 }
 
 pub async fn get(query: Document, db: Database) -> Result<Option<Market>, Error> {
-    let items = db.collection("market");
+    let items: Collection<Market> = db.collection("market");
 
     match items.find_one(query, None).await? {
-        Some(document) => {
-            let item: Market = bson::from_document(document)?;
-            Ok(Some(item))
-        }
+        Some(item) => Ok(Some(item)),
         None => Ok(None),
     }
 }

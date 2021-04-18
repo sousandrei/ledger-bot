@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::Error;
 
 #[allow(non_camel_case_types)]
+#[allow(clippy::clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 enum ItemSubType {
     W_FIST,
@@ -52,6 +53,7 @@ fn default_subtype() -> ItemSubType {
 }
 
 #[allow(non_camel_case_types)]
+#[allow(clippy::clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 enum ItemType {
     IT_HEALING,
@@ -92,15 +94,12 @@ impl From<Item> for Document {
 }
 
 pub async fn _get(id: i32, db: Database) -> Result<Option<Item>, Error> {
-    let items = db.collection("items");
+    let items: Collection<Item> = db.collection("items");
 
     let filter = bson::doc! { "item_id": id };
 
     match items.find_one(filter, None).await? {
-        Some(document) => {
-            let item: Item = bson::from_document(document)?;
-            Ok(Some(item))
-        }
+        Some(item) => Ok(Some(item)),
         None => Ok(None),
     }
 }
