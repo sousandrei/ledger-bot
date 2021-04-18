@@ -2,8 +2,10 @@ use mongodb::{
     bson::{self, doc},
     Database,
 };
+use std::env;
 use teloxide::{
     prelude::{Requester, RequesterExt},
+    types::ChatId,
     Bot,
 };
 
@@ -13,6 +15,12 @@ use crate::{
 };
 
 pub async fn compare_sales(db: Database) -> Result<(), Error> {
+    let chat_id: i64 = env::var("CHAT_ID")
+        .expect("CHAT_ID not present on environment")
+        .parse()?;
+
+    let chat_id = ChatId::from(chat_id);
+
     let bot = Bot::from_env().auto_send();
 
     let sales = sale::list(db.clone()).await?;
@@ -29,7 +37,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
                 sale.item,
                 sale.users.join(" ")
             );
-            bot.send_message(-580689714, text).await?;
+            bot.send_message(chat_id.clone(), text).await?;
 
             continue;
         }
@@ -45,7 +53,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
                 sale.users.join(" "),
                 shop.owner
             );
-            bot.send_message(-580689714, text).await?;
+            bot.send_message(chat_id.clone(), text).await?;
 
             continue;
         }

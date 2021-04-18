@@ -1,11 +1,11 @@
+use std::env;
 use teloxide::{
     adaptors::AutoSend,
-    prelude::{Request, RequesterExt, UpdateWithCx},
+    prelude::{Request, Requester, RequesterExt, UpdateWithCx},
     types::Message,
     utils::command::BotCommand,
     Bot,
 };
-
 use tracing::info;
 
 use crate::db;
@@ -47,11 +47,13 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> R
 }
 
 pub async fn run() -> Result<(), Error> {
+    let bot_username = env::var("BOT_USERNAME").expect("BOT_USERNAME not present on environment");
+
     info!("Starting bot");
 
     let bot = Bot::from_env().auto_send();
 
-    teloxide::commands_repl(bot, "RobertaoBot".to_string(), answer).await;
+    teloxide::commands_repl(bot, bot_username, answer).await;
 
     Ok(())
 }
