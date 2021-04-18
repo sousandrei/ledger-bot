@@ -1,30 +1,27 @@
+use mongodb::Database;
+use std::sync::Arc;
 use teloxide::{
     adaptors::AutoSend,
-    prelude::{Request, Requester, RequesterExt, UpdateWithCx},
+    prelude::{Request, RequesterExt, UpdateWithCx},
     types::Message,
     utils::command::BotCommand,
     Bot,
 };
+use tokio::sync::Mutex;
+use tracing::info;
 
-use crate::error::RuntimeError;
+use crate::Error;
 
-fn parse_add_params(input: String) -> Result<AddParams, RuntimeError> {
-    let parts: Vec<String> = input.split(' ').map(|s| s.to_string()).collect();
+mod add;
 
-    if parts.len() < 3 {
-        Err(RuntimeError::new(
-            "Tá faltando coisa aí! Exemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",
-        ))
-    } else {
-        let params = AddParams {
-            item: parts[0].to_owned(),
-            store: parts[1].to_owned(),
-            users: parts[2..].to_vec(),
-        };
+// TODO: make this pretty
+//====================================
+use lazy_static::lazy_static;
 
-        Ok(params)
-    }
+lazy_static! {
+    static ref DATABASE: Arc<Mutex<Option<Database>>> = Arc::new(Mutex::new(None));
 }
+//====================================
 
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "Eu entendo só isso aqui ó:")]
@@ -35,53 +32,36 @@ enum Command {
     Add(String),
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct AddParams {
-    item: String,
-    store: String,
-    users: Vec<String>,
-}
-
-async fn answer(
-    cx: UpdateWithCx<AutoSend<Bot>, Message>,
-    command: Command,
-) -> Result<(), RuntimeError> {
+async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> Result<(), Error> {
     println!("Message {:#?}", cx.update.text());
     println!("Chat {:#?}", cx.update.chat);
     println!("Chat_id {:#?}", cx.update.chat_id());
+
+    let db = DATABASE.lock().await;
+
+    if db.is_none() {
+        cx.answer("DB not initialized, try again soon")
+            .send()
+            .await?;
+    }
 
     match command {
         Command::Help => {
             cx.answer(Command::descriptions()).send().await?;
         }
-        Command::Add(input) => match parse_add_params(input) {
-            Ok(AddParams { item, store, users }) => {
-                println!("{:#?}", item);
-                println!("{:#?}", store);
-                println!("{:#?}", users);
-
-                cx.answer(
-                    "Show, registrei aqui o seu {} e vou ficar de olho pra quando ele for vendido.",
-                )
-                .await?;
-            }
-            Err(RuntimeError { message }) => {
-                cx.answer(message).await?;
-            }
-        },
+        Command::Add(input) => add::handler(cx, input).await?,
     };
 
     Ok(())
 }
 
-pub async fn run() -> Result<(), RuntimeError> {
-    teloxide::enable_logging!();
-    log::info!("Starting bot");
+pub async fn run(db: Database) -> Result<(), Error> {
+    info!("Starting bot");
 
     let bot = Bot::from_env().auto_send();
 
-    // Isso funciona
-    // bot.send_message(-580689714, "O PAI TA ON").send().await?;
+    let mut d = DATABASE.lock().await;
+    *d = Some(db);
 
     teloxide::commands_repl(bot, "RobertaoBot".to_string(), answer).await;
 

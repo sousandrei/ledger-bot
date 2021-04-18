@@ -1,0 +1,118 @@
+use mongodb::{
+    bson::{self, oid::ObjectId, Document},
+    results::InsertOneResult,
+    Collection, Database,
+};
+use serde::{Deserialize, Serialize};
+
+use crate::Error;
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+enum ItemSubType {
+    W_FIST,
+    W_DAGGER,
+    W_1HSWORD,
+    W_2HSWORD,
+    W_1HSPEAR,
+    W_2HSPEAR,
+    W_1HAXE,
+    W_2HAXE,
+    W_MACE,
+    W_2HMACE,
+    W_STAFF,
+    W_2HSTAFF,
+    W_BOW,
+    W_KNUCKLE,
+    W_MUSICAL,
+    W_WHIP,
+    W_BOOK,
+    W_KATAR,
+    W_REVOLVER,
+    W_RIFLE,
+    W_GATLING,
+    W_SHOTGUN,
+    W_GRENADE,
+    W_HUUMA,
+
+    A_ARROW,
+    A_DAGGER,
+    A_BULLET,
+    A_SHELL,
+    A_GRENADE,
+    A_SHURIKEN,
+    A_KUNAI,
+    A_CANNONBALL,
+    A_THROWWEAPON,
+
+    None,
+}
+
+fn default_subtype() -> ItemSubType {
+    ItemSubType::None
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+enum ItemType {
+    IT_HEALING,
+    IT_UNKNOWN,
+    IT_USABLE,
+    IT_ETC,
+    IT_WEAPON,
+    IT_ARMOR,
+    IT_CARD,
+    IT_PETEGG,
+    IT_PETARMOR,
+    IT_UNKNOWN2,
+    IT_AMMO,
+    IT_DELAYCONSUME,
+    IT_CASH,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Item {
+    #[serde(default)]
+    _id: ObjectId,
+    pub item_id: i32,
+    unique_name: String,
+    name: String,
+    #[serde(rename = "type")]
+    tipo: ItemType,
+    #[serde(default = "default_subtype")]
+    subtype: ItemSubType,
+    npc_price: i32,
+    #[serde(default)]
+    slots: i32,
+}
+
+impl From<Item> for Document {
+    fn from(item: Item) -> Self {
+        bson::to_document(&item).expect("Error converting to bson document")
+    }
+}
+
+pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
+    let items = db.collection("items");
+
+    let filter = bson::doc! { "item_it": id };
+
+    match items.find_one(filter, None).await? {
+        Some(document) => {
+            let item: Item = bson::from_document(document)?;
+            Ok(Some(item))
+        }
+        None => Ok(None),
+    }
+}
+
+pub async fn _add(item: Item, db: Database) -> Result<ObjectId, Error> {
+    let items: Collection<Item> = db.collection("items");
+
+    let InsertOneResult { inserted_id, .. } = items.insert_one(item.into(), None).await?;
+
+    match inserted_id.as_object_id() {
+        Some(id) => Ok(id.to_owned()),
+        None => Err(Error::new("ID missing from mongo call")),
+    }
+}
