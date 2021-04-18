@@ -177,6 +177,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
+ "serde",
  "time",
  "winapi",
 ]
@@ -875,6 +876,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 name = "ledger"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "lazy_static",
  "log",
  "mongodb",
