@@ -36,7 +36,7 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> R
             cx.answer(Command::descriptions()).send().await?;
         }
         Command::Add(input) => {
-            info!("{}", cx.update.text().clone().unwrap());
+            info!("{}", cx.update.text().unwrap());
             add::handler(cx, input, db).await?
         }
         Command::List => list::handler(cx, db).await?,

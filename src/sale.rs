@@ -44,12 +44,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
 
         let shop = shop.unwrap();
 
-        if shop
-            .items
-            .iter()
-            .find(|item| item.item_id == sale.item)
-            .is_none()
-        {
+        if !shop.items.iter().any(|item| item.item_id == sale.item) {
             sale::del(bson::to_document(&sale)?, db.clone()).await?;
 
             let text = format!(
