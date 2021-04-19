@@ -76,7 +76,7 @@ struct AddParams {
 }
 
 fn parse_add_params(input: String) -> Result<AddParams, Error> {
-    let re = Regex::new("(\\d+) \"([\\w\\s]+)\" ([@\\w\\s]+)")?;
+    let re = Regex::new("(\\d+) [\"“]([\\w\\s]+)[\"”] ([@\\w\\s]+)")?;
 
     let caps = re.captures(&input);
 
