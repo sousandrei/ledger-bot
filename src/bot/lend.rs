@@ -1,6 +1,8 @@
 use regex::Regex;
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 
+use crate::error::Error;
+
 pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, input: String) -> Result<(), Error> {
     let re = Regex::new("Me empresta\\? (\\d+) zenys")?;
 
