@@ -1,10 +1,13 @@
 
+use regex::Regex;
+use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
+
 pub async fn handler(
     cx: UpdateWithCx<AutoSend<Bot>, Message>, 
     input: String,
 ) -> Result<(), Error> {
     
-    let re = Regex::new("(Me empresta?) (\\d+) (zenys)")?;
+    let re = Regex::new("(/ˆMe empresta?$/) (\\d+) (/ˆzenys$/)")?;
 
     let caps = re.captures(&.input);
 
