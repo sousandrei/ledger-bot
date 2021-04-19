@@ -14,6 +14,7 @@ use crate::Error;
 mod add;
 mod del;
 mod list;
+mod lend;
 
 #[derive(BotCommand, Debug)]
 #[command(rename = "lowercase", description = "Eu entendo só isso aqui ó:")]
@@ -26,6 +27,8 @@ enum Command {
     List,
     #[command(description = "Deleta um alarme")]
     Del(String),
+    #[command(description = "Pede dinheiro emprestado pro Hulk Agiota")]
+    Lend(String),
 }
 
 async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> Result<(), Error> {
@@ -41,6 +44,7 @@ async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> R
         }
         Command::List => list::handler(cx, db).await?,
         Command::Del(input) => del::handler(cx, input, db).await?,
+        Command::Lend(input) => lend::handler(cx, input).await?,
     };
 
     Ok(())
