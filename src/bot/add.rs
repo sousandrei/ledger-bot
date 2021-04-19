@@ -6,7 +6,9 @@ use regex::Regex;
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 use tracing::{error, info};
 
+use crate::db;
 use crate::db::{
+    item::Item,
     market,
     sale::{self, Sale},
 };
@@ -48,6 +50,9 @@ pub async fn handler(
         return Ok(());
     }
 
+    let shop_item = shop_item.unwrap();
+    let Item { name, .. } = db::item::get(item, db.clone()).await?.unwrap();
+
     sale::add(
         Sale {
             _id: ObjectId::new(),
@@ -61,7 +66,7 @@ pub async fn handler(
 
     cx.answer(format!(
         "Show, registrei aqui o item {} vendido por {}",
-        item, seller
+        name, seller
     ))
     .await?;
 

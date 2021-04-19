@@ -77,7 +77,7 @@ pub struct Item {
     _id: ObjectId,
     item_id: i32,
     unique_name: String,
-    name: String,
+    pub name: String,
     #[serde(rename = "type")]
     tipo: ItemType,
     #[serde(default = "default_subtype")]
@@ -93,7 +93,7 @@ impl From<Item> for Document {
     }
 }
 
-pub async fn _get(id: i32, db: Database) -> Result<Option<Item>, Error> {
+pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
     let items: Collection<Item> = db.collection("items");
 
     let filter = bson::doc! { "item_id": id };
