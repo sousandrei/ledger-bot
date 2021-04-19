@@ -10,7 +10,8 @@ use teloxide::{
 };
 
 use crate::{
-    db::{market, sale},
+    db,
+    db::{item::Item, market, sale},
     error::Error,
 };
 
@@ -45,6 +46,9 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         let shop = shop.unwrap();
 
         let shop_item = shop.items.iter().find(|item| item.item_id == sale.item);
+        let Item {
+            name: item_name, ..
+        } = db::item::get(sale.item, db.clone()).await?.unwrap();
 
         if shop_item.is_none() {
             sale::del(bson::to_document(&sale)?, db.clone()).await?;
@@ -53,7 +57,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
 
             let text = format!(
                 "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado.",
-                sale.item,
+                item_name,
                 sale.users.join(" "),
                 shop.owner,
                 sale.value,
@@ -71,7 +75,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
 
             let text = format!(
                 "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem.",
-                sale.item, shop.owner, sale.value, shop_item.price
+                item_name, shop.owner, sale.value, shop_item.price
             );
             bot.send_message(chat_id.clone(), text).await?;
 
