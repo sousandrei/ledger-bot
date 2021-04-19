@@ -56,7 +56,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
             let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
 
             let text = format!(
-                "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado.",
+                "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado",
                 item_name,
                 sale.users.join(" "),
                 shop.owner,
@@ -74,7 +74,7 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
             sale::update(sale.item, doc! { "value": shop_item.price }, db.clone()).await?;
 
             let text = format!(
-                "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem.",
+                "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem",
                 item_name, shop.owner, sale.value, shop_item.price
             );
             bot.send_message(chat_id.clone(), text).await?;
