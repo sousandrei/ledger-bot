@@ -13,8 +13,8 @@ use crate::Error;
 
 mod add;
 mod del;
-mod list;
 mod lend;
+mod list;
 
 #[derive(BotCommand, Debug)]
 #[command(rename = "lowercase", description = "Eu entendo só isso aqui ó:")]
