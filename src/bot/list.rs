@@ -18,7 +18,7 @@ pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> 
             sale._id,
             sale.item,
             sale.seller,
-            sale.users.join(" ")
+            sale.users.join(" ").replace("@", "")
         );
         text.push_str(line.as_str());
     }
