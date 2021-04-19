@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::Error;
 
 #[allow(non_camel_case_types)]
-#[allow(clippy::clippy::upper_case_acronyms)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 enum ItemSubType {
     W_FIST,
@@ -53,7 +53,7 @@ fn default_subtype() -> ItemSubType {
 }
 
 #[allow(non_camel_case_types)]
-#[allow(clippy::clippy::upper_case_acronyms)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 enum ItemType {
     IT_HEALING,
