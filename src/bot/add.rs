@@ -59,6 +59,7 @@ pub async fn handler(
             item,
             seller: seller.clone(),
             users,
+            value: shop_item.price,
         },
         db,
     )
