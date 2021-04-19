@@ -14,7 +14,7 @@ pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> 
 
     for sale in sales {
         let line = format!(
-            "id: {}\nitem: {}\nseller: {}\ninteressados: {}",
+            "id: {}\nitem: {}\nseller: {}\ninteressados: {}\n",
             sale._id,
             sale.item,
             sale.seller,
