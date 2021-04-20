@@ -75,6 +75,10 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         } = db::item::get(sale.item, db.clone()).await?.unwrap();
 
         if shop_item.is_none() {
+            info!(
+                "Item {} could not be found in {}'s store. Removing and reporting as sold",
+                sale.item, shop.owner
+            );
             sale::del(bson::to_document(&sale)?, db.clone()).await?;
 
             let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
@@ -95,6 +99,10 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         let shop_item = shop_item.unwrap();
 
         if shop_item.price != sale.value {
+            info!(
+                "Item {} has changed prices. Updating {} -> {}",
+                sale.item, sale.value, shop_item.price
+            );
             sale::update(
                 sale.item,
                 doc! { "value": shop_item.price, "killcount": 0 },
