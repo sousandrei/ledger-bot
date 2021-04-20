@@ -14,11 +14,11 @@ pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> 
 
     for sale in sales {
         let line = format!(
-            "id: {}\nitem: {}\nseller: {}\ninteressados: {}\n",
+            "id: {}\nitem: {}\nseller: {}\ninteressados: {}\n======\n",
             sale._id,
             sale.item,
             sale.seller,
-            sale.users.join(" ").replace("@", "")
+            sale.users.join(", ").replace("@", "")
         );
         text.push_str(line.as_str());
     }

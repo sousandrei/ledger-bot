@@ -66,7 +66,7 @@ pub async fn handler(
     .await?;
 
     cx.answer(format!(
-        "Show, registrei aqui o item {} vendido por {}",
+        "Show, registrei aqui o item {} sendo vendido por {}",
         name, seller
     ))
     .await?;
