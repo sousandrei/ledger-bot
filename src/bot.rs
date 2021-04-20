@@ -15,22 +15,20 @@ mod add;
 mod del;
 mod lend;
 mod list;
+#[path = "translations/str.rs"] mod str;
 
 #[derive(BotCommand, Debug)]
-#[command(
-    rename = "lowercase",
-    description = "Hulk é cabuloso, ele ajuda a organizar as vendas coletivas.\nAdicione um item marcando a galera e eu aviso quando vender.\nDeixe de ser passado pra trás.\nTambém emprestro zenys a uma taxa amiga.\n\nEu entendo só isso aqui ó:"
-)]
+#[command(rename = "lowercase",description = str::intro())]
 enum Command {
-    #[command(description = "Amostra esse texto")]
+    #[command(description = str::help())]
     Help,
-    #[command(description = "Adiciona um alarme para um item, e notifica uma série de usuários")]
+    #[command(description = str::add())]
     Add(String),
-    #[command(description = "Lista os items monitorados")]
+    #[command(description = str::list())]
     List,
-    #[command(description = "Deleta um alarme")]
+    #[command(description = str::del())]
     Del(String),
-    #[command(description = "Pede dinheiro emprestado pro Hulk Agiota")]
+    #[command(description = str::lend())]
     Lend(String),
 }
 
