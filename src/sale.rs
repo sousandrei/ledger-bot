@@ -48,8 +48,6 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
                     sale.users.join(" ")
                 );
                 bot.send_message(chat_id.clone(), text).await?;
-
-                continue;
             } else {
                 info!(
                     "Item {} is assigned to an inactive shop. Incrementing its killcount {} -> {}",
@@ -63,8 +61,9 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
                     db.clone(),
                 )
                 .await?;
-                continue;
             }
+
+            continue;
         }
 
         let shop = shop.unwrap();
