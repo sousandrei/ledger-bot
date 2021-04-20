@@ -17,6 +17,7 @@ pub struct Sale {
     pub seller: String,
     pub users: Vec<String>,
     pub value: i32,
+    pub killcount: i32,
 }
 
 impl From<Sale> for Document {
