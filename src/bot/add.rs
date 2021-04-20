@@ -6,7 +6,9 @@ use regex::Regex;
 use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 use tracing::{error, info};
 
+use crate::db;
 use crate::db::{
+    item::Item,
     market,
     sale::{self, Sale},
 };
@@ -48,12 +50,16 @@ pub async fn handler(
         return Ok(());
     }
 
+    let shop_item = shop_item.unwrap();
+    let Item { name, .. } = db::item::get(item, db.clone()).await?.unwrap();
+
     sale::add(
         Sale {
             _id: ObjectId::new(),
             item,
             seller: seller.clone(),
             users,
+            value: shop_item.price,
         },
         db,
     )
@@ -61,7 +67,7 @@ pub async fn handler(
 
     cx.answer(format!(
         "Show, registrei aqui o item {} vendido por {}",
-        item, seller
+        name, seller
     ))
     .await?;
 
@@ -76,7 +82,7 @@ struct AddParams {
 }
 
 fn parse_add_params(input: String) -> Result<AddParams, Error> {
-    let re = Regex::new("(\\d+) \"([\\w\\s]+)\" ([@\\w\\s]+)")?;
+    let re = Regex::new("(\\d+) [\"“]([\\w\\s]+)[\"”] ([@\\w\\s]+)")?;
 
     let caps = re.captures(&input);
 

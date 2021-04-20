@@ -10,7 +10,8 @@ use teloxide::{
 };
 
 use crate::{
-    db::{market, sale},
+    db,
+    db::{item::Item, market, sale},
     error::Error,
 };
 
@@ -44,14 +45,37 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
 
         let shop = shop.unwrap();
 
-        if !shop.items.iter().any(|item| item.item_id == sale.item) {
+        let shop_item = shop.items.iter().find(|item| item.item_id == sale.item);
+        let Item {
+            name: item_name, ..
+        } = db::item::get(sale.item, db.clone()).await?.unwrap();
+
+        if shop_item.is_none() {
             sale::del(bson::to_document(&sale)?, db.clone()).await?;
 
+            let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
+
             let text = format!(
-                "O item {} de {} vendeu no shop {}",
-                sale.item,
+                "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado",
+                item_name,
                 sale.users.join(" "),
-                shop.owner
+                shop.owner,
+                sale.value,
+                shared_amount
+            );
+            bot.send_message(chat_id.clone(), text).await?;
+
+            continue;
+        }
+
+        let shop_item = shop_item.unwrap();
+
+        if shop_item.price != sale.value {
+            sale::update(sale.item, doc! { "value": shop_item.price }, db.clone()).await?;
+
+            let text = format!(
+                "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem",
+                item_name, shop.owner, sale.value, shop_item.price
             );
             bot.send_message(chat_id.clone(), text).await?;
 
