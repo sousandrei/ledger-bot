@@ -8,12 +8,16 @@ use teloxide::{
     types::ChatId,
     Bot,
 };
+use tracing::info;
 
 use crate::{
     db,
     db::{item::Item, market, sale},
     error::Error,
 };
+
+// Sales with killcount equal to this number will be removed from the database.
+const KILLCOUNT_THRESHOLD: i32 = 3;
 
 pub async fn compare_sales(db: Database) -> Result<(), Error> {
     let chat_id: i64 = env::var("CHAT_ID")
@@ -30,15 +34,34 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         let shop = market::get(doc! { "owner": sale.clone().seller}, db.clone()).await?;
 
         if shop.is_none() {
-            sale::del(bson::to_document(&sale)?, db.clone()).await?;
+            if sale.killcount >= KILLCOUNT_THRESHOLD {
+                info!(
+                    "Item {} has reached the killcount threshold. Removing it.",
+                    sale.item,
+                );
+                sale::del(bson::to_document(&sale)?, db.clone()).await?;
 
-            let text = format!(
-                "o shop de {} fechou, removendo da lista o item {} de {}",
-                sale.seller,
-                sale.item,
-                sale.users.join(" ")
-            );
-            bot.send_message(chat_id.clone(), text).await?;
+                let text = format!(
+                    "o shop de {} fechou, removendo da lista o item {} de {}",
+                    sale.seller,
+                    sale.item,
+                    sale.users.join(" ")
+                );
+                bot.send_message(chat_id.clone(), text).await?;
+            } else {
+                info!(
+                    "Item {} is assigned to an inactive shop. Incrementing its killcount {} -> {}",
+                    sale.item,
+                    sale.killcount,
+                    sale.killcount + 1
+                );
+                sale::update(
+                    sale.item,
+                    doc! { "killcount": sale.killcount + 1 },
+                    db.clone(),
+                )
+                .await?;
+            }
 
             continue;
         }
@@ -51,6 +74,10 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         } = db::item::get(sale.item, db.clone()).await?.unwrap();
 
         if shop_item.is_none() {
+            info!(
+                "Item {} could not be found in {}'s store. Removing and reporting as sold",
+                sale.item, shop.owner
+            );
             sale::del(bson::to_document(&sale)?, db.clone()).await?;
 
             let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
@@ -71,13 +98,32 @@ pub async fn compare_sales(db: Database) -> Result<(), Error> {
         let shop_item = shop_item.unwrap();
 
         if shop_item.price != sale.value {
-            sale::update(sale.item, doc! { "value": shop_item.price }, db.clone()).await?;
+            info!(
+                "Item {} has changed prices. Updating {} -> {}",
+                sale.item, sale.value, shop_item.price
+            );
+            sale::update(
+                sale.item,
+                doc! { "value": shop_item.price, "killcount": 0 },
+                db.clone(),
+            )
+            .await?;
 
             let text = format!(
                 "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem",
                 item_name, shop.owner, sale.value, shop_item.price
             );
             bot.send_message(chat_id.clone(), text).await?;
+
+            continue;
+        }
+
+        // If we reached this point of this function, it means:
+        //    - the store is properly open
+        //    - the item is still being offered by it
+        //    - the item has the same value as it had in the previous check
+        if sale.killcount > 0 {
+            sale::update(sale.item, doc! { "killcount": 0 }, db.clone()).await?;
 
             continue;
         }

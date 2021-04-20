@@ -60,6 +60,7 @@ pub async fn handler(
             seller: seller.clone(),
             users,
             value: shop_item.price,
+            killcount: 0,
         },
         db,
     )
