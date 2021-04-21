@@ -1,11 +1,12 @@
+use mongodb::Database;
+use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
+use tracing::info;
+
 use crate::Error;
 use crate::{
     db,
     db::{item::Item, sale},
 };
-use mongodb::Database;
-use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
-use tracing::info;
 
 pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> Result<(), Error> {
     let sales = sale::list(db.clone()).await?;
