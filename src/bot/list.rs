@@ -9,7 +9,7 @@ use crate::db::sale;
 use crate::Error;
 
 pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> Result<(), Error> {
-    let sales = sale::list(db).await?;
+    let sales = sale::list(db.clone()).await?;
 
     info!("listing sales");
 
