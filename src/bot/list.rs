@@ -3,8 +3,8 @@ use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 use tracing::info;
 
 use crate::db;
-use crate::db::sale;
 use crate::db::item::Item;
+use crate::db::sale;
 
 use crate::Error;
 
