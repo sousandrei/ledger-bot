@@ -13,9 +13,11 @@ pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> 
     let mut text = "".to_owned();
 
     for sale in sales {
+        let Item { name, .. } = db::item::get(sale.item, db.clone()).await?.unwrap();
         let line = format!(
-            "id: {}\nitem: {}\nseller: {}\ninteressados: {}\n======\n",
+            "id: {}\nitem: {}({})\nseller: {}\ninteressados: {}\n======\n",
             sale._id,
+            name,
             sale.item,
             sale.seller,
             sale.users.join(", ").replace("@", "")
