@@ -10,5 +10,7 @@ push:
 	docker tag ${IMAGE} ${REGISTRY_URL}/${IMAGE}:${VERSION}
 	docker push ${REGISTRY_URL}/${IMAGE}:${VERSION}
 
-deploy: build push
+deploy-ci:
 	helm upgrade ledger ./chart --namespace ledger --set image=${VERSION}
+
+deploy: build push deploy-ci
