@@ -45,7 +45,7 @@ impl From<Market> for Document {
     }
 }
 
-pub async fn get(query: Document, db: Database) -> Result<Option<Market>, Error> {
+pub async fn get(query: Document, db: &Database) -> Result<Option<Market>, Error> {
     let items: Collection<Market> = db.collection("market");
 
     match items.find_one(query, None).await? {
@@ -54,7 +54,7 @@ pub async fn get(query: Document, db: Database) -> Result<Option<Market>, Error>
     }
 }
 
-pub async fn add_bulk(item_list: Vec<Market>, db: Database) -> Result<(), Error> {
+pub async fn add_bulk(item_list: Vec<Market>, db: &Database) -> Result<(), Error> {
     let items: Collection<Market> = db.collection("market");
 
     items.insert_many(item_list, None).await?;
@@ -62,7 +62,7 @@ pub async fn add_bulk(item_list: Vec<Market>, db: Database) -> Result<(), Error>
     Ok(())
 }
 
-pub async fn clear(db: Database) -> Result<(), Error> {
+pub async fn clear(db: &Database) -> Result<(), Error> {
     let items: Collection<Market> = db.collection("market");
 
     items.drop(None).await?;

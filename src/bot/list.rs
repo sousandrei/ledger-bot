@@ -1,5 +1,4 @@
 use mongodb::Database;
-use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 use tracing::info;
 
 use crate::Error;
@@ -8,15 +7,15 @@ use crate::{
     db::{item::Item, sale},
 };
 
-pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> Result<(), Error> {
-    let sales = sale::list(db.clone()).await?;
+pub async fn handler(db: &Database) -> Result<String, Error> {
+    let sales = sale::list(db).await?;
 
     info!("listing sales");
 
     let mut text = "".to_owned();
 
     for sale in sales {
-        let Item { name, .. } = db::item::get(sale.item, db.clone()).await?.unwrap();
+        let Item { name, .. } = db::item::get(sale.item, db).await?.unwrap();
         let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
 
         let line = format!(
@@ -36,7 +35,5 @@ pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, db: Database) -> 
         text = "Nada registrado no momento".to_owned();
     }
 
-    cx.answer(text).await?;
-
-    Ok(())
+    Ok(text)
 }

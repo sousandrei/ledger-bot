@@ -1,19 +1,17 @@
 use regex::Regex;
-use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
 
 use crate::error::Error;
 
-pub async fn handler(cx: UpdateWithCx<AutoSend<Bot>, Message>, input: String) -> Result<(), Error> {
+pub async fn handler(msg: &str) -> Result<String, Error> {
     let re = Regex::new("Me empresta\\? (\\d+) zenys")?;
 
-    let caps = re.captures(&input);
+    let caps = re.captures(msg);
 
     if caps.is_none() {
-        cx.answer("Errou feio, errou rude! Exemplo de uso do comando:\nMe empresta? 10000 zenys")
-            .await?;
-        return Ok(());
+        return Ok(
+            "Errou feio, errou rude! Exemplo de uso do comando:\nMe empresta? 10000 zenys".into(),
+        );
     }
 
-    cx.answer("Não...").await?;
-    Ok(())
+    Ok("Não...".into())
 }

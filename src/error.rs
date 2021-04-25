@@ -1,6 +1,3 @@
-use std::num::ParseIntError;
-use teloxide::RequestError;
-
 #[derive(Debug, Clone)]
 pub struct Error {
     pub message: String,
@@ -26,14 +23,8 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<RequestError> for Error {
-    fn from(error: RequestError) -> Error {
-        Error::new(&error.to_string())
-    }
-}
-
-impl From<ParseIntError> for Error {
-    fn from(error: ParseIntError) -> Self {
+impl From<std::num::ParseIntError> for Error {
+    fn from(error: std::num::ParseIntError) -> Self {
         Error::new(&error.to_string())
     }
 }
@@ -69,6 +60,12 @@ impl From<mongodb::bson::oid::Error> for Error {
 
 impl From<regex::Error> for Error {
     fn from(error: regex::Error) -> Self {
+        Error::new(&error.to_string())
+    }
+}
+
+impl From<telegram_bot::Error> for Error {
+    fn from(error: telegram_bot::Error) -> Self {
         Error::new(&error.to_string())
     }
 }

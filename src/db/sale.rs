@@ -26,7 +26,7 @@ impl From<Sale> for Document {
     }
 }
 
-pub async fn list(db: Database) -> Result<Vec<Sale>, Error> {
+pub async fn list(db: &Database) -> Result<Vec<Sale>, Error> {
     let items = db.collection("sale");
 
     let mut sales: Vec<Sale> = Vec::new();
@@ -39,7 +39,7 @@ pub async fn list(db: Database) -> Result<Vec<Sale>, Error> {
     Ok(sales)
 }
 
-pub async fn get(query: Document, db: Database) -> Result<Option<Sale>, Error> {
+pub async fn get(query: Document, db: &Database) -> Result<Option<Sale>, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
     match items.find_one(query, None).await? {
@@ -48,7 +48,7 @@ pub async fn get(query: Document, db: Database) -> Result<Option<Sale>, Error> {
     }
 }
 
-pub async fn add(item: Sale, db: Database) -> Result<ObjectId, Error> {
+pub async fn add(item: Sale, db: &Database) -> Result<ObjectId, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
     let InsertOneResult { inserted_id, .. } = items.insert_one(item, None).await?;
@@ -59,7 +59,7 @@ pub async fn add(item: Sale, db: Database) -> Result<ObjectId, Error> {
     }
 }
 
-pub async fn update(item: i32, sale: Document, db: Database) -> Result<ObjectId, Error> {
+pub async fn update(item: i32, sale: Document, db: &Database) -> Result<ObjectId, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
     let UpdateResult { upserted_id, .. } = items
@@ -78,7 +78,7 @@ pub async fn update(item: i32, sale: Document, db: Database) -> Result<ObjectId,
     }
 }
 
-pub async fn del(query: Document, db: Database) -> Result<i64, Error> {
+pub async fn del(query: Document, db: &Database) -> Result<i64, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
     let DeleteResult { deleted_count, .. } = items.delete_one(query, None).await?;

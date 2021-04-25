@@ -93,7 +93,7 @@ impl From<Item> for Document {
     }
 }
 
-pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
+pub async fn get(id: i32, db: &Database) -> Result<Option<Item>, Error> {
     let items: Collection<Item> = db.collection("items");
 
     let filter = bson::doc! { "item_id": id };
@@ -104,7 +104,7 @@ pub async fn get(id: i32, db: Database) -> Result<Option<Item>, Error> {
     }
 }
 
-pub async fn add_bulk(item_list: Vec<Item>, db: Database) -> Result<(), Error> {
+pub async fn add_bulk(item_list: Vec<Item>, db: &Database) -> Result<(), Error> {
     let items: Collection<Item> = db.collection("items");
 
     items.insert_many(item_list, None).await?;
@@ -112,7 +112,7 @@ pub async fn add_bulk(item_list: Vec<Item>, db: Database) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn clear(db: Database) -> Result<(), Error> {
+pub async fn clear(db: &Database) -> Result<(), Error> {
     let items: Collection<Item> = db.collection("items");
 
     items.drop(None).await?;
