@@ -54,14 +54,14 @@ async fn handle_message(
     bot_username: &str,
 ) -> Result<(), Error> {
     if let MessageKind::Text { ref data, .. } = message.kind {
-        if !data.starts_with("/") {
+        if !data.starts_with('/') {
             return Ok(());
         }
 
         // Print received text message to stdout.
         println!("<{}>: {}", &message.from.first_name, data);
 
-        let first_space = data.find(' ').unwrap_or(data.len());
+        let first_space = data.find(' ').unwrap_or_else(|| data.len());
 
         let (cmd, _) = data.split_at(first_space);
 
