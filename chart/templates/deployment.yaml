@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger-deployment
+  namespace: ledger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ledger
+  template:
+    metadata:
+      labels:
+        app: ledger
+    spec:
+      containers:
+        - name: ledger
+          image: "gcr.io/sousandrei/ledger:{{ .Values.image }}"
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: ledger-secret
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "250Mi"
+            limits:
+              cpu: "1"
+              memory: "500Mi"
