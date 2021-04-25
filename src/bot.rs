@@ -58,15 +58,11 @@ async fn handle_message(
             return Ok(());
         }
 
-        // Print received text message to stdout.
-        println!("<{}>: {}", &message.from.first_name, data);
+        info!("<{}>: {}", &message.from.first_name, data);
 
         let first_space = data.find(' ').unwrap_or_else(|| data.len());
 
         let (cmd, _) = data.split_at(first_space);
-
-        println!("{:#?}", first_space);
-        println!("{:#?}", cmd);
 
         match cmd.replace(bot_username, "").as_str() {
             "/help" => {
