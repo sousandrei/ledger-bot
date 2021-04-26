@@ -22,7 +22,7 @@ impl From<Fame> for Document {
     }
 }
 
-pub async fn _get(id: i32, db: Database) -> Result<Option<Fame>, Error> {
+pub async fn _get(id: i32, db: &Database) -> Result<Option<Fame>, Error> {
     let items: Collection<Fame> = db.collection("fame");
 
     let filter = bson::doc! { "item_it": id };
@@ -33,7 +33,7 @@ pub async fn _get(id: i32, db: Database) -> Result<Option<Fame>, Error> {
     }
 }
 
-pub async fn _add(item: Fame, db: Database) -> Result<ObjectId, Error> {
+pub async fn _add(item: Fame, db: &Database) -> Result<ObjectId, Error> {
     let items: Collection<Fame> = db.collection("fame");
 
     let InsertOneResult { inserted_id, .. } = items.insert_one(item, None).await?;
@@ -44,7 +44,7 @@ pub async fn _add(item: Fame, db: Database) -> Result<ObjectId, Error> {
     }
 }
 
-pub async fn add_bulk(item_list: Vec<Fame>, db: Database) -> Result<(), Error> {
+pub async fn add_bulk(item_list: Vec<Fame>, db: &Database) -> Result<(), Error> {
     let items: Collection<Fame> = db.collection("fame");
 
     items.insert_many(item_list, None).await?;
@@ -52,7 +52,7 @@ pub async fn add_bulk(item_list: Vec<Fame>, db: Database) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn clear(db: Database) -> Result<(), Error> {
+pub async fn clear(db: &Database) -> Result<(), Error> {
     let items: Collection<Fame> = db.collection("fame");
 
     items.drop(None).await?;

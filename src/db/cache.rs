@@ -21,7 +21,7 @@ impl From<Cache> for Document {
     }
 }
 
-pub async fn get(collection: &str, db: Database) -> Result<Option<Cache>, Error> {
+pub async fn get(collection: &str, db: &Database) -> Result<Option<Cache>, Error> {
     let items: Collection<Cache> = db.collection("cache");
 
     let query = bson::doc! { "collection": collection };
@@ -32,7 +32,7 @@ pub async fn get(collection: &str, db: Database) -> Result<Option<Cache>, Error>
     }
 }
 
-pub async fn add(item: Cache, db: Database) -> Result<ObjectId, Error> {
+pub async fn add(item: Cache, db: &Database) -> Result<ObjectId, Error> {
     let items: Collection<Cache> = db.collection("cache");
 
     let InsertOneResult { inserted_id, .. } = items.insert_one(item, None).await?;
@@ -43,7 +43,7 @@ pub async fn add(item: Cache, db: Database) -> Result<ObjectId, Error> {
     }
 }
 
-pub async fn del(collection: &str, db: Database) -> Result<(), Error> {
+pub async fn del(collection: &str, db: &Database) -> Result<(), Error> {
     let items: Collection<Cache> = db.collection("cache");
 
     let query = bson::doc! { "collection": collection };

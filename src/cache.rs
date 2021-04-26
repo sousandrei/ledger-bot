@@ -15,7 +15,7 @@ use crate::{
     sale,
 };
 
-pub async fn refresh(db: Database) -> Result<(), Error> {
+pub async fn refresh(db: &Database) -> Result<(), Error> {
     schedule_cache_refresh("items".to_owned(), Duration::days(7), db.clone()).await;
     schedule_cache_refresh("market".to_owned(), Duration::minutes(10), db.clone()).await;
     schedule_cache_refresh("fame".to_owned(), Duration::minutes(10), db.clone()).await;
@@ -30,10 +30,10 @@ async fn schedule_cache_refresh(
 ) -> JoinHandle<Result<(), Error>> {
     tokio::spawn(async move {
         loop {
-            refresh_cache(&collection.clone(), duration, db.clone()).await?;
+            refresh_cache(&collection.clone(), duration, &db).await?;
 
             if collection == "items" {
-                sale::compare_sales(db.clone()).await?;
+                sale::compare_sales(&db).await?;
             }
 
             sleep(duration.to_std().unwrap()).await;
@@ -41,8 +41,8 @@ async fn schedule_cache_refresh(
     })
 }
 
-async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Result<(), Error> {
-    let c = cache::get(collection, db.clone()).await?;
+async fn refresh_cache(collection: &str, duration: Duration, db: &Database) -> Result<(), Error> {
+    let c = cache::get(collection, db).await?;
 
     if c.is_some() && c.unwrap().date > Utc::now().into() {
         info!("Using {} cache", collection);
@@ -51,9 +51,9 @@ async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Re
 
     info!("Renewing {} cache", collection);
 
-    cache::del(collection, db.clone()).await?;
+    cache::del(collection, db).await?;
 
-    cache_data(collection, db.clone()).await?;
+    cache_data(collection, db).await?;
 
     let expiry_date = Utc::now() + duration;
 
@@ -63,14 +63,14 @@ async fn refresh_cache(collection: &str, duration: Duration, db: Database) -> Re
             collection: collection.to_owned(),
             date: expiry_date.into(),
         },
-        db.clone(),
+        db,
     )
     .await?;
 
     Ok(())
 }
 
-async fn cache_data(collection: &str, db: Database) -> Result<(), Error> {
+async fn cache_data(collection: &str, db: &Database) -> Result<(), Error> {
     let api_key = env::var("API_KEY").expect("API_KEY not present on environment");
 
     let data: serde_json::Value = reqwest::Client::new()
@@ -90,14 +90,14 @@ async fn cache_data(collection: &str, db: Database) -> Result<(), Error> {
             let items = data.get("items").unwrap();
             let items_vec: Vec<Item> = serde_json::from_value(items.to_owned()).unwrap();
 
-            item::clear(db.clone()).await?;
+            item::clear(db).await?;
             item::add_bulk(items_vec, db).await?;
         }
         "market" => {
             let market = data.get("shops").unwrap();
             let market_vec: Vec<Market> = serde_json::from_value(market.to_owned()).unwrap();
 
-            market::clear(db.clone()).await?;
+            market::clear(db).await?;
             market::add_bulk(market_vec, db).await?;
         }
         "fame" => {
@@ -105,7 +105,7 @@ async fn cache_data(collection: &str, db: Database) -> Result<(), Error> {
             let fame = data.get("brewers").unwrap();
             let fame_vec: Vec<Fame> = serde_json::from_value(fame.to_owned()).unwrap();
 
-            fame::clear(db.clone()).await?;
+            fame::clear(db).await?;
             fame::add_bulk(fame_vec, db).await?;
         }
         _ => unreachable!(),

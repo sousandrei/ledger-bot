@@ -3,7 +3,7 @@ use mongodb::{
     Database,
 };
 use regex::Regex;
-use teloxide::{adaptors::AutoSend, prelude::UpdateWithCx, types::Message, Bot};
+
 use tracing::{error, info};
 
 use crate::db;
@@ -14,30 +14,24 @@ use crate::db::{
 };
 use crate::Error;
 
-pub async fn handler(
-    cx: UpdateWithCx<AutoSend<Bot>, Message>,
-    input: String,
-    db: Database,
-) -> Result<(), Error> {
+pub async fn handler(msg: &str, db: &Database) -> Result<String, Error> {
     let AddParams {
         item,
         seller,
         users,
-    } = match parse_add_params(input) {
+    } = match parse_add_params(msg) {
         Ok(params) => params,
         Err(error) => {
-            cx.answer(error.message).await?;
-            return Ok(());
+            return Ok(error.message);
         }
     };
 
     info!("item {} on shop {}", item, seller.clone());
 
-    let shop = market::get(bson::doc! { "owner": seller.clone() }, db.clone()).await?;
+    let shop = market::get(bson::doc! { "owner": seller.clone() }, db).await?;
 
     if shop.is_none() {
-        cx.answer("Não achei esta lojinha").await?;
-        return Ok(());
+        return Ok("Não achei esta lojinha".into());
     }
 
     let shop = shop.unwrap();
@@ -45,13 +39,11 @@ pub async fn handler(
     let shop_item = shop.items.iter().find(|i| i.item_id == item);
 
     if shop_item.is_none() {
-        cx.answer("Este vendedor não esta vendendo este item")
-            .await?;
-        return Ok(());
+        return Ok("Este vendedor não esta vendendo este item".into());
     }
 
     let shop_item = shop_item.unwrap();
-    let Item { name, .. } = db::item::get(item, db.clone()).await?.unwrap();
+    let Item { name, .. } = db::item::get(item, db).await?.unwrap();
 
     sale::add(
         Sale {
@@ -66,13 +58,10 @@ pub async fn handler(
     )
     .await?;
 
-    cx.answer(format!(
+    Ok(format!(
         "Show, registrei aqui o item {} sendo vendido por {}",
         name, seller
     ))
-    .await?;
-
-    Ok(())
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -82,13 +71,13 @@ struct AddParams {
     users: Vec<String>,
 }
 
-fn parse_add_params(input: String) -> Result<AddParams, Error> {
-    let re = Regex::new("(\\d+) [\"“]([\\w\\s]+)[\"”] ([@\\w\\s]+)")?;
+fn parse_add_params(message: &str) -> Result<AddParams, Error> {
+    let re = Regex::new("/[\\w@]+ (\\d+) [\"“]([\\w\\s]+)[\"”] ([@\\w\\s]+)")?;
 
-    let caps = re.captures(&input);
+    let caps = re.captures(&message);
 
     if caps.is_none() {
-        error!("Not enough parameters: {:?}", input);
+        error!("Not enough parameters: {:?}", message);
 
         return Err(Error::new(
             "Tá faltando coisa aí! Exemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",

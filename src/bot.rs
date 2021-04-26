@@ -1,11 +1,5 @@
+use mongodb::Database;
 use std::env;
-use teloxide::{
-    adaptors::AutoSend,
-    prelude::{Request, RequesterExt, UpdateWithCx},
-    types::Message,
-    utils::command::BotCommand,
-    Bot,
-};
 use tracing::info;
 
 use crate::db;
@@ -16,51 +10,88 @@ mod del;
 mod lend;
 mod list;
 
-#[derive(BotCommand, Debug)]
-#[command(
-    rename = "lowercase",
-    description = "Hulk é cabuloso, ele ajuda a organizar as vendas coletivas.\nAdicione um item marcando a galera e eu aviso quando vender.\nDeixe de ser passado pra trás.\nTambém empresto zenys a uma taxa amiga.\n\nEu entendo só isso aqui ó:"
-)]
-enum Command {
-    #[command(description = "Amostra esse texto")]
-    Help,
-    #[command(description = "Adiciona um alarme para um item, e notifica uma série de usuários")]
-    Add(String),
-    #[command(description = "Lista os items monitorados")]
-    List,
-    #[command(description = "Deleta um alarme")]
-    Del(String),
-    #[command(description = "Pede dinheiro emprestado pro Hulk Agiota")]
-    Lend(String),
-}
+use futures::StreamExt;
+use telegram_bot::{
+    types::{MessageKind, UpdateKind},
+    Api, CanReplySendMessage, Message, SendMessage,
+};
 
-async fn answer(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Command) -> Result<(), Error> {
+pub async fn run() -> Result<(), Error> {
+    let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not present on environment");
+    let bot_username = env::var("BOT_USERNAME").expect("BOT_USERNAME not present on environment");
+
     let db = db::get_db().await?;
 
-    match command {
-        Command::Help => {
-            cx.answer(Command::descriptions()).send().await?;
-        }
-        Command::Add(input) => {
-            info!("{}", cx.update.text().unwrap());
-            add::handler(cx, input, db).await?
-        }
-        Command::List => list::handler(cx, db).await?,
-        Command::Del(input) => del::handler(cx, input, db).await?,
-        Command::Lend(input) => lend::handler(cx, input).await?,
-    };
+    info!("Starting bot");
+
+    let api = Api::new(bot_token);
+
+    let mut stream = api.stream();
+    while let Some(update) = stream.next().await {
+        let update = update?;
+
+        match update.kind {
+            UpdateKind::Message(message) => handle_message(message, &api, &db, &bot_username).await,
+            UpdateKind::EditedMessage(_) => Ok(()),
+            UpdateKind::ChannelPost(_) => Ok(()),
+            UpdateKind::EditedChannelPost(_) => Ok(()),
+            UpdateKind::InlineQuery(_) => Ok(()),
+            UpdateKind::CallbackQuery(_) => Ok(()),
+            UpdateKind::Poll(_) => Ok(()),
+            UpdateKind::PollAnswer(_) => Ok(()),
+            UpdateKind::Error(_) => Ok(()),
+            UpdateKind::Unknown => Ok(()),
+        }?;
+    }
 
     Ok(())
 }
 
-pub async fn run() -> Result<(), Error> {
-    let bot_username = env::var("BOT_USERNAME").expect("BOT_USERNAME not present on environment");
+async fn handle_message(
+    message: Message,
+    api: &Api,
+    db: &Database,
+    bot_username: &str,
+) -> Result<(), Error> {
+    if let MessageKind::Text { ref data, .. } = message.kind {
+        if !data.starts_with('/') {
+            return Ok(());
+        }
 
-    info!("Starting bot");
+        info!("<{}>: {}", &message.from.first_name, data);
 
-    let bot = Bot::from_env().auto_send();
+        let first_space = data.find(' ').unwrap_or_else(|| data.len());
 
-    teloxide::commands_repl(bot, bot_username, answer).await;
+        let (cmd, _) = data.split_at(first_space);
+
+        match cmd.replace(bot_username, "").as_str() {
+            "/help" => {
+                let msg = message.text_reply("Alguem precisa escrever o help");
+                api.send(msg).await?;
+            }
+            "/add" => {
+                let reply = add::handler(data, db).await?;
+                let msg = message.text_reply(reply);
+                api.send(msg).await?;
+            }
+            "/list" => {
+                let text = list::handler(db).await?;
+                let msg = SendMessage::new(message.chat.id(), text);
+                api.send(msg).await?;
+            }
+            "/del" => {
+                let reply = del::handler(data, db).await?;
+                let msg = message.text_reply(reply);
+                api.send(msg).await?;
+            }
+            "/lend" => {
+                let reply = lend::handler(data).await?;
+                let msg = message.text_reply(reply);
+                api.send(msg).await?;
+            }
+            _ => {}
+        };
+    }
 
     Ok(())
 }
