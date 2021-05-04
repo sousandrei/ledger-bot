@@ -1,6 +1,6 @@
 use mongodb::Database;
 use std::env;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::db;
 use crate::Error;
@@ -30,7 +30,7 @@ pub async fn run() -> Result<(), Error> {
     while let Some(update) = stream.next().await {
         let update = update?;
 
-        match update.kind {
+        if let Err(e) = match update.kind {
             UpdateKind::Message(message) => handle_message(message, &api, &db, &bot_username).await,
             UpdateKind::EditedMessage(_) => Ok(()),
             UpdateKind::ChannelPost(_) => Ok(()),
@@ -41,7 +41,9 @@ pub async fn run() -> Result<(), Error> {
             UpdateKind::PollAnswer(_) => Ok(()),
             UpdateKind::Error(_) => Ok(()),
             UpdateKind::Unknown => Ok(()),
-        }?;
+        } {
+            error!("Unable to respond to command: {}", e)
+        }
     }
 
     Ok(())
