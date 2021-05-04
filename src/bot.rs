@@ -63,8 +63,9 @@ async fn handle_message(
         let first_space = data.find(' ').unwrap_or_else(|| data.len());
 
         let (cmd, _) = data.split_at(first_space);
+        let at_bot_username = ["@", bot_username].concat();
 
-        match cmd.replace(bot_username, "").as_str() {
+        match cmd.replace(&at_bot_username, "").as_str() {
             "/help" => {
                 let msg = message.text_reply("Alguem precisa escrever o help");
                 api.send(msg).await?;
