@@ -1,11 +1,19 @@
 use mongodb::Database;
 use tracing::info;
 
-use crate::Error;
 use crate::{
     db,
     db::{item::Item, sale},
 };
+use crate::{db::sale::UserMention, Error};
+
+fn join_users(users: Vec<UserMention>) -> String {
+    users
+        .into_iter()
+        .map(|user| user.to_string())
+        .collect::<Vec<String>>()
+        .join(" ")
+}
 
 pub async fn handler(db: &Database) -> Result<String, Error> {
     let sales = sale::list(db).await?;
@@ -25,7 +33,7 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
             sale.item,
             sale.seller,
             sale.value,
-            sale.users.join(", ").replace("@", ""),
+            join_users(sale.users).replace("@", ""),
             shared_amount
         );
         text.push_str(line.as_str());

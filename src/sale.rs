@@ -3,14 +3,26 @@ use mongodb::{
     Database,
 };
 use std::env;
-use telegram_bot::{Api, ChatId, SendMessage};
+use telegram_bot::{Api, ChatId, ParseMode, SendMessage};
 use tracing::info;
 
 use crate::{
     db,
-    db::{item::Item, market, sale},
+    db::{
+        item::Item,
+        market,
+        sale::{self, UserMention},
+    },
     error::Error,
 };
+
+fn join_users(users: Vec<UserMention>) -> String {
+    users
+        .into_iter()
+        .map(|user| user.to_string())
+        .collect::<Vec<String>>()
+        .join(" ")
+}
 
 // Sales with killcount equal to this number will be removed from the database.
 const KILLCOUNT_THRESHOLD: i32 = 3;
@@ -39,15 +51,16 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                 );
                 sale::del(bson::to_document(&sale)?, db).await?;
 
-                let msg = SendMessage::new(
+                let mut msg = SendMessage::new(
                     chat_id,
                     format!(
                         "o shop de {} fechou, removendo da lista o item {} de {}",
                         sale.seller,
                         sale.item,
-                        sale.users.join(" ")
+                        join_users(sale.users),
                     ),
                 );
+                msg.parse_mode(ParseMode::MarkdownV2);
                 api.send(msg).await?;
             } else {
                 info!(
@@ -78,17 +91,18 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
 
             let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
 
-            let msg = SendMessage::new(
+            let mut msg = SendMessage::new(
                 chat_id,
                 format!(
                     "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado",
                     item_name,
-                    sale.users.join(" "),
+                    join_users(sale.users),
                     shop.owner,
                     sale.value,
                     shared_amount
                 ),
             );
+            msg.parse_mode(ParseMode::MarkdownV2);
             api.send(msg).await?;
             continue;
         }

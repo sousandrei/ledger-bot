@@ -6,9 +6,25 @@ use mongodb::{
     Collection, Database,
 };
 use serde::{Deserialize, Serialize};
+use telegram_bot::UserId;
 use tracing::info;
 
 use crate::Error;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+pub enum UserMention {
+    TextMention(UserId, String),
+    TagMention(String),
+}
+
+impl ToString for UserMention {
+    fn to_string(&self) -> String {
+        match self {
+            UserMention::TextMention(id, name) => format!("[{}](tg://user?id={})", name, id),
+            UserMention::TagMention(name) => name.clone(),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Sale {
@@ -16,7 +32,7 @@ pub struct Sale {
     pub _id: ObjectId,
     pub item: i32,
     pub seller: String,
-    pub users: Vec<String>,
+    pub users: Vec<UserMention>,
     pub value: i32,
     pub killcount: i32,
 }

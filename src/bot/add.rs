@@ -4,9 +4,10 @@ use mongodb::{
 };
 use regex::Regex;
 
+use telegram_bot::{MessageEntity, MessageEntityKind, User};
 use tracing::{error, info};
 
-use crate::db;
+use crate::db::{self, sale::UserMention};
 use crate::db::{
     item::Item,
     market,
@@ -14,12 +15,16 @@ use crate::db::{
 };
 use crate::Error;
 
-pub async fn handler(msg: &str, db: &Database) -> Result<String, Error> {
+pub async fn handler(
+    msg: &str,
+    entities: &Vec<MessageEntity>,
+    db: &Database,
+) -> Result<String, Error> {
     let AddParams {
         item,
         seller,
         users,
-    } = match parse_add_params(msg) {
+    } = match parse_add_params(msg, entities) {
         Ok(params) => params,
         Err(error) => {
             return Ok(error.message);
@@ -64,15 +69,21 @@ pub async fn handler(msg: &str, db: &Database) -> Result<String, Error> {
     ))
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug)]
 struct AddParams {
     item: i32,
     seller: String,
-    users: Vec<String>,
+    users: Vec<UserMention>,
 }
 
-fn parse_add_params(message: &str) -> Result<AddParams, Error> {
-    let re = Regex::new("/[\\w@]+ (\\d+) [\"“]([\\w\\s]+)[\"”] ([@\\w\\s]+)")?;
+fn parse_add_params(message: &str, entities: &Vec<MessageEntity>) -> Result<AddParams, Error> {
+    if message.contains('”') || message.contains('“') {
+        return Err(Error::new(
+            "Opa, to vendo que você tá usando umas aspas diferenciadas. Vamo parar ai ou vou ser obrigado a comunicar pro meu primo miliciano 🔫.\nSe você tiver usando um mac, vá em:\nSystem Preferences > Keyboard > Text\n e desabilite “””““smart”“””” quotes. Mula."
+        ));
+    }
+
+    let re = Regex::new("/[\\w@]+ (\\d+) \"([\\w\\s]+)\" [@\\w\\s]+")?;
 
     let caps = re.captures(&message);
 
@@ -88,11 +99,26 @@ fn parse_add_params(message: &str) -> Result<AddParams, Error> {
 
     let item: i32 = caps[1].parse()?;
     let seller = caps[2].to_owned();
-    let users = caps[3]
-        .split(' ')
+
+    let users: Vec<UserMention> = entities
         .into_iter()
-        .filter(|user| user.starts_with('@'))
-        .map(|user| user.to_owned())
+        .filter_map(|entity| {
+            if entity.kind == MessageEntityKind::Mention {
+                let offset = entity.offset as usize;
+                let length = entity.length as usize;
+
+                let user_name = message[offset..(offset + length)].to_string();
+
+                Some(UserMention::TagMention(user_name))
+            } else if let MessageEntityKind::TextMention(User {
+                id, ref first_name, ..
+            }) = entity.kind
+            {
+                Some(UserMention::TextMention(id, first_name.clone()))
+            } else {
+                None
+            }
+        })
         .collect();
 
     let params = AddParams {
