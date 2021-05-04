@@ -53,7 +53,11 @@ async fn handle_message(
     db: &Database,
     bot_username: &str,
 ) -> Result<(), Error> {
-    if let MessageKind::Text { ref data, .. } = message.kind {
+    if let MessageKind::Text {
+        ref data,
+        ref entities,
+    } = message.kind
+    {
         if !data.starts_with('/') {
             return Ok(());
         }
@@ -63,14 +67,15 @@ async fn handle_message(
         let first_space = data.find(' ').unwrap_or_else(|| data.len());
 
         let (cmd, _) = data.split_at(first_space);
+        let at_bot_username = ["@", bot_username].concat();
 
-        match cmd.replace(bot_username, "").as_str() {
+        match cmd.replace(&at_bot_username, "").as_str() {
             "/help" => {
-                let msg = message.text_reply("Alguem precisa escrever o help");
+                let msg = message.text_reply("@Canato disse que ia escrever, e ta ai ate hoje...");
                 api.send(msg).await?;
             }
             "/add" => {
-                let reply = add::handler(data, db).await?;
+                let reply = add::handler(data, entities, db).await?;
                 let msg = message.text_reply(reply);
                 api.send(msg).await?;
             }

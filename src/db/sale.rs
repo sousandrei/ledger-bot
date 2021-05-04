@@ -6,8 +6,25 @@ use mongodb::{
     Collection, Database,
 };
 use serde::{Deserialize, Serialize};
+use telegram_bot::UserId;
+use tracing::info;
 
 use crate::Error;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+pub enum UserMention {
+    TextMention(UserId, String),
+    TagMention(String),
+}
+
+impl ToString for UserMention {
+    fn to_string(&self) -> String {
+        match self {
+            UserMention::TextMention(id, name) => format!("[{}](tg://user?id={})", name, id),
+            UserMention::TagMention(name) => name.clone(),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Sale {
@@ -15,14 +32,14 @@ pub struct Sale {
     pub _id: ObjectId,
     pub item: i32,
     pub seller: String,
-    pub users: Vec<String>,
+    pub users: Vec<UserMention>,
     pub value: i32,
     pub killcount: i32,
 }
 
 impl From<Sale> for Document {
-    fn from(item: Sale) -> Self {
-        bson::to_document(&item).expect("Error converting to bson document")
+    fn from(sale: Sale) -> Self {
+        bson::to_document(&sale).expect("Error converting to bson document")
     }
 }
 
@@ -48,10 +65,10 @@ pub async fn get(query: Document, db: &Database) -> Result<Option<Sale>, Error> 
     }
 }
 
-pub async fn add(item: Sale, db: &Database) -> Result<ObjectId, Error> {
+pub async fn add(sale: Sale, db: &Database) -> Result<ObjectId, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
-    let InsertOneResult { inserted_id, .. } = items.insert_one(item, None).await?;
+    let InsertOneResult { inserted_id, .. } = items.insert_one(sale, None).await?;
 
     match inserted_id.as_object_id() {
         Some(id) => Ok(id.to_owned()),
@@ -59,22 +76,22 @@ pub async fn add(item: Sale, db: &Database) -> Result<ObjectId, Error> {
     }
 }
 
-pub async fn update(item: i32, sale: Document, db: &Database) -> Result<ObjectId, Error> {
+pub async fn update(
+    sale_id: &ObjectId,
+    update_query: Document,
+    db: &Database,
+) -> Result<(), Error> {
     let items: Collection<Sale> = db.collection("sale");
 
-    let UpdateResult { upserted_id, .. } = items
-        .update_one(doc! { "item": item }, doc! { "$set": sale }, None)
+    let UpdateResult { modified_count, .. } = items
+        .update_one(doc! { "_id": sale_id }, doc! { "$set": update_query }, None)
         .await?;
 
-    if upserted_id.is_none() {
-        return Err(Error::new(
-            "Update attempt failed as item is not present on database",
-        ));
-    }
-
-    match upserted_id.unwrap().as_object_id() {
-        Some(id) => Ok(id.to_owned()),
-        None => Err(Error::new("ID missing from mongo call")),
+    if modified_count == 0 {
+        info!("Failed to update item");
+        Err(Error::new("Failed to update item"))
+    } else {
+        Ok(())
     }
 }
 
