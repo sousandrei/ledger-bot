@@ -17,7 +17,7 @@ use crate::Error;
 
 pub async fn handler(
     msg: &str,
-    entities: &Vec<MessageEntity>,
+    entities: &[MessageEntity],
     db: &Database,
 ) -> Result<String, Error> {
     let AddParams {
@@ -76,7 +76,7 @@ struct AddParams {
     users: Vec<UserMention>,
 }
 
-fn parse_add_params(message: &str, entities: &Vec<MessageEntity>) -> Result<AddParams, Error> {
+fn parse_add_params(message: &str, entities: &[MessageEntity]) -> Result<AddParams, Error> {
     if message.contains('”') || message.contains('“') {
         return Err(Error::new(
             "Opa, to vendo que você tá usando umas aspas diferenciadas. Vamo parar ai ou vou ser obrigado a comunicar pro meu primo miliciano 🔫.\nSe você tiver usando um mac, vá em:\nSystem Preferences > Keyboard > Text\n e desabilite “””““smart”“””” quotes. Mula."
@@ -101,7 +101,7 @@ fn parse_add_params(message: &str, entities: &Vec<MessageEntity>) -> Result<AddP
     let seller = caps[2].to_owned();
 
     let users: Vec<UserMention> = entities
-        .into_iter()
+        .iter()
         .filter_map(|entity| {
             if entity.kind == MessageEntityKind::Mention {
                 let offset = entity.offset as usize;
