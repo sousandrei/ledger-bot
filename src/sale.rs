@@ -16,6 +16,8 @@ use crate::{
 const KILLCOUNT_THRESHOLD: i32 = 3;
 
 pub async fn compare_sales(db: &Database) -> Result<(), Error> {
+    info!("🔍   Checking if anything has been sold...");
+
     let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not present on environment");
     let chat_id: i64 = env::var("CHAT_ID")
         .expect("CHAT_ID not present on environment")
@@ -54,7 +56,7 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                     sale.killcount,
                     sale.killcount + 1
                 );
-                sale::update(sale.item, doc! { "killcount": sale.killcount + 1 }, db).await?;
+                sale::update(&sale._id, doc! { "killcount": sale.killcount + 1 }, db).await?;
             }
 
             continue;
@@ -99,7 +101,7 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                 sale.item, sale.value, shop_item.price
             );
             sale::update(
-                sale.item,
+                &sale._id,
                 doc! { "value": shop_item.price, "killcount": 0 },
                 db,
             )
@@ -122,7 +124,7 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
         //    - the item is still being offered by it
         //    - the item has the same value as it had in the previous check
         if sale.killcount > 0 {
-            sale::update(sale.item, doc! { "killcount": 0 }, db).await?;
+            sale::update(&sale._id, doc! { "killcount": 0 }, db).await?;
 
             continue;
         }
