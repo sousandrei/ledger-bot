@@ -25,18 +25,36 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
     for sale in sales {
         let Item { name, .. } = db::item::get(sale.item, db).await?.unwrap();
         let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
-
-        let line = format!(
-            "Id: {}\nItem: {}({})\nSeller: {}\nValor: {}\nInteressados: {}\nValor por pessoa: {}\n======\n",
-            sale._id,
-            name,
-            sale.item,
-            sale.seller,
-            sale.value,
-            join_users(sale.users).replace("@", ""),
-            shared_amount
+        let market_url = format!("http://www.originsro-market.de/sells/item_id/{}", sale.item);
+        let shop_url = format!(
+            "http://www.originsro-market.de/shop/owner?owner={}",
+            sale.seller
         );
-        text.push_str(line.as_str());
+
+        text.push_str(format!("<b>Id:</b> (<code>{}</code>)\n", sale._id).as_str());
+        text.push_str(
+            format!(
+                "<b>Item:</b> <a href='{}'>{} ({})</a>\n",
+                market_url, name, sale.item
+            )
+            .as_str(),
+        );
+        text.push_str(format!("<b>Valor:</b> {}\n", sale.value).as_str());
+        text.push_str(
+            format!(
+                "<b>Seller:</b> <a href='{}'>{}</a>\n",
+                shop_url, sale.seller
+            )
+            .as_str(),
+        );
+        text.push_str(
+            format!(
+                "<b>Interessados:</b> {}\n",
+                join_users(sale.users).replace("@", "")
+            )
+            .as_str(),
+        );
+        text.push_str(format!("<b>Valor por pessoa:</b> {}\n\n", shared_amount).as_str());
     }
 
     if text.is_empty() {
