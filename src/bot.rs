@@ -13,7 +13,7 @@ mod list;
 use futures::StreamExt;
 use telegram_bot::{
     types::{MessageKind, UpdateKind},
-    Api, CanReplySendMessage, Message, SendMessage,
+    Api, CanReplySendMessage, Message, ParseMode, SendMessage,
 };
 
 pub async fn run() -> Result<(), Error> {
@@ -83,7 +83,9 @@ async fn handle_message(
             }
             "/list" => {
                 let text = list::handler(db).await?;
-                let msg = SendMessage::new(message.chat.id(), text);
+                let mut msg = SendMessage::new(message.chat.id(), text);
+                msg.parse_mode(ParseMode::Html);
+                msg.disable_preview();
                 api.send(msg).await?;
             }
             "/del" => {
