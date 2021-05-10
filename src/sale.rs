@@ -41,7 +41,7 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
     let sales = sale::list(db).await?;
 
     for sale in sales {
-        let shop = market::get(doc! { "owner": sale.clone().seller}, db).await?;
+        let shop = market::get(doc! { "owner": sale.clone().seller.name}, db).await?;
 
         if shop.is_none() {
             if sale.killcount >= KILLCOUNT_THRESHOLD {
@@ -54,8 +54,8 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                 let mut msg = SendMessage::new(
                     chat_id,
                     format!(
-                        "o shop de {} fechou, removendo da lista o item {} de {}",
-                        sale.seller,
+                        "O shop de {} fechou já tem um tempo, então a gente vai parar de ficar de olho se o item {} vendeu para {} porque tempo é dinheiro a gente não tem nem um nem outro pra perder (ง'̀-'́)ง",
+                        sale.seller.name,
                         sale.item,
                         join_users(sale.users),
                     ),
@@ -84,7 +84,7 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
 
         if shop_item.is_none() {
             info!(
-                "Item {} could not be found in {}'s store. Removing and reporting as sold",
+                "Item {} could not be found in {}'s store. Removing",
                 sale.item, shop.owner
             );
             sale::del(bson::to_document(&sale)?, db).await?;
@@ -93,15 +93,24 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
 
             let mut msg = SendMessage::new(
                 chat_id,
-                format!(
-                    "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado",
-                    item_name,
-                    join_users(sale.users),
-                    shop.owner,
-                    sale.value,
-                    shared_amount
-                ),
+                if shop._id == sale.seller.id {
+                    format!(
+                        "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado", 
+                        item_name,
+                        join_users(sale.users),
+                        shop.owner,
+                        sale.value,
+                        shared_amount)
+                } else {
+                    format!(
+                        "Tô checando aqui e tô vendo que o item {} não tá mais na shop {}\no que quer dizer que, independentemente se vendeu ou não, essa pessoa embolsou {}z na surdina\npode ir distribuindo {}z aí pro pessoal 🔫\nse liga aí {}", 
+                        item_name,
+                        shop.owner,
+                        sale.value,
+                        shared_amount, join_users(sale.users))
+                },
             );
+
             msg.parse_mode(ParseMode::MarkdownV2);
             api.send(msg).await?;
             continue;

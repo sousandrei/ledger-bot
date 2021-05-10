@@ -26,10 +26,7 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
         let Item { name, .. } = db::item::get(sale.item, db).await?.unwrap();
         let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
         let market_url = format!("http://www.originsro-market.de/sells/item_id/{}", sale.item);
-        let shop_url = format!(
-            "http://www.originsro-market.de/shop/owner?owner={}",
-            sale.seller
-        );
+        let shop_url = format!("http://www.originsro-market.de/shop/id/{}", sale.seller.id);
 
         text.push_str(format!("<b>Id:</b> (<code>{}</code>)\n", sale._id).as_str());
         text.push_str(
@@ -43,7 +40,7 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
         text.push_str(
             format!(
                 "<b>Seller:</b> <a href='{}'>{}</a>\n",
-                shop_url, sale.seller
+                shop_url, sale.seller.name
             )
             .as_str(),
         );
