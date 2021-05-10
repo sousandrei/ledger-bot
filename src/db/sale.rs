@@ -25,13 +25,18 @@ impl ToString for UserMention {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Seller {
+    pub id: ObjectId,
+    pub name: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Sale {
     #[serde(default)]
     pub _id: ObjectId,
     pub item: i32,
-    pub seller: String,
+    pub seller: Seller,
     pub users: Vec<UserMention>,
     pub value: i32,
     pub killcount: i32,
