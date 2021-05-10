@@ -32,7 +32,7 @@ async fn schedule_cache_refresh(
         loop {
             refresh_cache(&collection.clone(), duration, &db).await?;
 
-            if collection == "items" {
+            if collection != "items" {
                 sale::compare_sales(&db).await?;
             }
 
