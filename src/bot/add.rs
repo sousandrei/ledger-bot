@@ -7,11 +7,11 @@ use regex::Regex;
 use telegram_bot::{MessageEntity, MessageEntityKind, User};
 use tracing::{error, info};
 
-use crate::db::{self, sale::UserMention};
 use crate::db::{
+    self,
     item::Item,
     market,
-    sale::{self, Sale},
+    sale::{self, Sale, Seller, UserMention},
 };
 use crate::Error;
 
@@ -22,7 +22,7 @@ pub async fn handler(
 ) -> Result<String, Error> {
     let AddParams {
         item,
-        seller,
+        seller_name,
         users,
     } = match parse_add_params(msg, entities) {
         Ok(params) => params,
@@ -31,9 +31,9 @@ pub async fn handler(
         }
     };
 
-    info!("item {} on shop {}", item, seller.clone());
+    info!("item {} on shop {}", item, seller_name.clone());
 
-    let shop = market::get(bson::doc! { "owner": seller.clone() }, db).await?;
+    let shop = market::get(bson::doc! { "owner": seller_name.clone() }, db).await?;
 
     if shop.is_none() {
         return Ok("Não achei esta lojinha".into());
@@ -41,6 +41,10 @@ pub async fn handler(
 
     let shop = shop.unwrap();
 
+    let seller = Seller {
+        id: shop._id,
+        name: seller_name.clone(),
+    };
     let shop_item = shop.items.iter().find(|i| i.item_id == item);
 
     if shop_item.is_none() {
@@ -54,7 +58,7 @@ pub async fn handler(
         Sale {
             _id: ObjectId::new(),
             item,
-            seller: seller.clone(),
+            seller,
             users,
             value: shop_item.price,
             killcount: 0,
@@ -65,14 +69,14 @@ pub async fn handler(
 
     Ok(format!(
         "Show, registrei aqui o item {} sendo vendido por {}",
-        name, seller
+        name, seller_name
     ))
 }
 
 #[derive(Debug)]
 struct AddParams {
     item: i32,
-    seller: String,
+    seller_name: String,
     users: Vec<UserMention>,
 }
 
@@ -98,7 +102,7 @@ fn parse_add_params(message: &str, entities: &[MessageEntity]) -> Result<AddPara
     let caps = caps.unwrap();
 
     let item: i32 = caps[1].parse()?;
-    let seller = caps[2].to_owned();
+    let seller_name = caps[2].to_owned();
 
     let users: Vec<UserMention> = entities
         .iter()
@@ -123,7 +127,7 @@ fn parse_add_params(message: &str, entities: &[MessageEntity]) -> Result<AddPara
 
     let params = AddParams {
         item,
-        seller,
+        seller_name,
         users,
     };
 
