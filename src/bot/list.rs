@@ -1,4 +1,5 @@
 use mongodb::Database;
+use num_format::{Locale, ToFormattedString};
 use tracing::info;
 
 use crate::{
@@ -24,7 +25,7 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
 
     for sale in sales {
         let Item { name, .. } = db::item::get(sale.item, db).await?.unwrap();
-        let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
+        let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor() as i32;
         let market_url = format!("http://www.originsro-market.de/sells/item_id/{}", sale.item);
         let shop_url = format!("http://www.originsro-market.de/shop/id/{}", sale.seller.id);
 
@@ -36,7 +37,13 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
             )
             .as_str(),
         );
-        text.push_str(format!("<b>Valor:</b> {}\n", sale.value).as_str());
+        text.push_str(
+            format!(
+                "<b>Valor:</b> {}\n",
+                sale.value.to_formatted_string(&Locale::pt)
+            )
+            .as_str(),
+        );
         text.push_str(
             format!(
                 "<b>Seller:</b> <a href='{}'>{}</a>\n",
@@ -51,7 +58,13 @@ pub async fn handler(db: &Database) -> Result<String, Error> {
             )
             .as_str(),
         );
-        text.push_str(format!("<b>Valor por pessoa:</b> {}\n\n", shared_amount).as_str());
+        text.push_str(
+            format!(
+                "<b>Valor por pessoa:</b> {}\n\n",
+                shared_amount.to_formatted_string(&Locale::pt)
+            )
+            .as_str(),
+        );
     }
 
     if text.is_empty() {

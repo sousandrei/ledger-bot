@@ -2,6 +2,7 @@ use mongodb::{
     bson::{self, doc},
     Database,
 };
+use num_format::{Locale, ToFormattedString};
 use std::env;
 use telegram_bot::{Api, ChatId, ParseMode, SendMessage};
 use tracing::info;
@@ -89,7 +90,8 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
             );
             sale::del(bson::to_document(&sale)?, db).await?;
 
-            let shared_amount = ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor();
+            let shared_amount =
+                ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor() as i32;
 
             let mut msg = SendMessage::new(
                 chat_id,
@@ -99,15 +101,16 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                         item_name,
                         join_users(sale.users),
                         shop.owner,
-                        sale.value,
-                        shared_amount)
+                        sale.value.to_formatted_string(&Locale::pt),
+                        shared_amount.to_formatted_string(&Locale::pt))
                 } else {
                     format!(
                         "Tô checando aqui e tô vendo que o item {} não tá mais na shop {}\no que quer dizer que, independentemente se vendeu ou não, essa pessoa embolsou {}z na surdina\npode ir distribuindo {}z aí pro pessoal 🔫\nse liga aí {}", 
                         item_name,
                         shop.owner,
-                        sale.value,
-                        shared_amount, join_users(sale.users))
+                        sale.value.to_formatted_string(&Locale::pt),
+                        shared_amount.to_formatted_string(&Locale::pt),
+                        join_users(sale.users))
                 },
             );
 
@@ -134,7 +137,10 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
                 chat_id,
                 format!(
                     "O item {} teve seu preço modificado na shop {}\nDe {}z para {}z\nSeguimos de olho nessa malandragem",
-                    item_name, shop.owner, sale.value, shop_item.price
+                    item_name,
+                    shop.owner,
+                    sale.value.to_formatted_string(&Locale::pt),
+                    shop_item.price.to_formatted_string(&Locale::pt)
                 ),
             );
             api.send(msg).await?;
