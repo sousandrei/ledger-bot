@@ -95,7 +95,7 @@ fn parse_add_params(message: &str, entities: &[MessageEntity]) -> Result<AddPara
         error!("Not enough parameters: {:?}", message);
 
         return Err(Error::new(
-            "Tá faltando coisa aí! Exemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",
+            "Tá faltando coisa aí!\nO comando é /add [cod item] \"NomeVendedor\" @interessado1 @interessado2 \nExemplo de uso do comando:\n/add 501 \"Vendi Sai Chorano\" @yurick @sousandrei",
         ));
     }
 
