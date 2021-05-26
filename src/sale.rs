@@ -28,6 +28,10 @@ fn join_users(users: Vec<UserMention>) -> String {
 // Sales with killcount equal to this number will be removed from the database.
 const KILLCOUNT_THRESHOLD: i32 = 3;
 
+fn replace_forbidden_chars(str: String) -> String {
+    str.replace(".", "\\.")
+}
+
 pub async fn compare_sales(db: &Database) -> Result<(), Error> {
     info!("🔍   Checking if anything has been sold...");
 
@@ -93,26 +97,25 @@ pub async fn compare_sales(db: &Database) -> Result<(), Error> {
             let shared_amount =
                 ((sale.value as f32 * 0.98) / sale.users.len() as f32).floor() as i32;
 
-            let mut msg = SendMessage::new(
-                chat_id,
-                if shop._id == sale.seller.id {
-                    format!(
-                        "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado", 
-                        item_name,
-                        join_users(sale.users),
-                        shop.owner,
-                        sale.value.to_formatted_string(&Locale::pt),
-                        shared_amount.to_formatted_string(&Locale::pt))
-                } else {
-                    format!(
-                        "Tô checando aqui e tô vendo que o item {} não tá mais na shop {}\no que quer dizer que, independentemente se vendeu ou não, essa pessoa embolsou {}z na surdina\npode ir distribuindo {}z aí pro pessoal 🔫\nse liga aí {}", 
-                        item_name,
-                        shop.owner,
-                        sale.value.to_formatted_string(&Locale::pt),
-                        shared_amount.to_formatted_string(&Locale::pt),
-                        join_users(sale.users))
-                },
-            );
+            let text_message = if shop._id == sale.seller.id {
+                format!(
+                    "O item {} de {} vendeu no shop {}\nno valor de {}z, o que dá {}z coletado por interessado", 
+                    item_name,
+                    join_users(sale.users),
+                    shop.owner,
+                    sale.value.to_formatted_string(&Locale::pt),
+                    shared_amount.to_formatted_string(&Locale::pt))
+            } else {
+                format!(
+                    "Tô checando aqui e tô vendo que o item {} não tá mais na shop {}\no que quer dizer que, independentemente se vendeu ou não, essa pessoa embolsou {}z na surdina\npode ir distribuindo {}z aí pro pessoal 🔫\nse liga aí {}", 
+                    item_name,
+                    shop.owner,
+                    sale.value.to_formatted_string(&Locale::pt),
+                    shared_amount.to_formatted_string(&Locale::pt),
+                    join_users(sale.users))
+            };
+
+            let mut msg = SendMessage::new(chat_id, replace_forbidden_chars(text_message));
 
             msg.parse_mode(ParseMode::MarkdownV2);
             api.send(msg).await?;
