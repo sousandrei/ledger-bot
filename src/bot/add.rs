@@ -89,7 +89,7 @@ fn parse_add_params(message: &str, entities: &[MessageEntity]) -> Result<AddPara
 
     let re = Regex::new("/[\\w@]+ (\\d+) \"([\\w\\s]+)\" [@\\w\\s]+")?;
 
-    let caps = re.captures(&message);
+    let caps = re.captures(message);
 
     if caps.is_none() {
         error!("Not enough parameters: {:?}", message);
