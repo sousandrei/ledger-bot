@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
 use mongodb::{
-    bson::{self, oid::ObjectId, DateTime, Document},
+    bson::{self, oid::ObjectId, Document},
     results::InsertOneResult,
     Collection, Database,
 };
@@ -12,7 +13,7 @@ pub struct Cache {
     #[serde(default)]
     pub _id: ObjectId,
     pub collection: String,
-    pub date: DateTime,
+    pub date: DateTime<Utc>,
 }
 
 impl From<Cache> for Document {

@@ -18,7 +18,7 @@ pub async fn handler(msg: &str, db: &Database) -> Result<String, Error> {
         }
     };
 
-    let sale = sale::get(doc! { "_id": id.clone() }, db).await?;
+    let sale = sale::get(doc! { "_id": id }, db).await?;
 
     info!("deleting sale {:?}", sale.unwrap());
     sale::del(doc! { "_id": id }, db).await?;
