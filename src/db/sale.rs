@@ -100,7 +100,7 @@ pub async fn update(
     }
 }
 
-pub async fn del(query: Document, db: &Database) -> Result<i64, Error> {
+pub async fn del(query: Document, db: &Database) -> Result<u64, Error> {
     let items: Collection<Sale> = db.collection("sale");
 
     let DeleteResult { deleted_count, .. } = items.delete_one(query, None).await?;

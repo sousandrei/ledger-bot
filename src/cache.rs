@@ -44,7 +44,7 @@ async fn schedule_cache_refresh(
 async fn refresh_cache(collection: &str, duration: Duration, db: &Database) -> Result<(), Error> {
     let c = cache::get(collection, db).await?;
 
-    if c.is_some() && c.unwrap().date > Utc::now().into() {
+    if c.is_some() && c.unwrap().date > Utc::now() {
         info!("Using {} cache", collection);
         return Ok(());
     }
@@ -61,7 +61,7 @@ async fn refresh_cache(collection: &str, duration: Duration, db: &Database) -> R
         Cache {
             _id: ObjectId::new(),
             collection: collection.to_owned(),
-            date: expiry_date.into(),
+            date: expiry_date,
         },
         db,
     )

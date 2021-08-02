@@ -41,6 +41,11 @@ pub async fn run() -> Result<(), Error> {
             UpdateKind::PollAnswer(_) => Ok(()),
             UpdateKind::Error(_) => Ok(()),
             UpdateKind::Unknown => Ok(()),
+            UpdateKind::ChosenInlineResult(_) => todo!(),
+            UpdateKind::ShippingQuery(_) => todo!(),
+            UpdateKind::PreCheckoutQuery(_) => todo!(),
+            UpdateKind::MyChatMember(_) => todo!(),
+            UpdateKind::ChatMember(_) => todo!(),
         } {
             error!("Unable to respond to command: {}", e)
         }
